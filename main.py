@@ -18,10 +18,19 @@ scope = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/spreadsheets",
 ]
-creds = Credentials.from_service_account_file("google-credentials.json", scopes=scope)
-service = build("sheets", "v4", credentials=creds)
-SPREADSHEET_ID = "1dl1o5gLriDLUeRmzDT_Oft-6RkQD76crmZDwYWviSOE"
-sheet_title = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()["sheets"][0]["properties"]["title"]
+
+# ✅ Updated: Load credentials from environment variable instead of local file
+creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
+if not creds_json:
+    raise Exception("❌ GOOGLE_CREDENTIALS_JSON not found in environment variables.")
+try:
+    creds_dict = json.loads(creds_json)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+    service = build("sheets", "v4", credentials=creds)
+    SPREADSHEET_ID = "1dl1o5gLriDLUeRmzDT_Oft-6RkQD76crmZDwYWviSOE"
+    sheet_title = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID).execute()["sheets"][0]["properties"]["title"]
+except Exception as e:
+    raise Exception(f"⚠️ Google Sheets initialization failed: {e}")
 
 def append_to_google_sheet(vendor, amount, category, txn_id, status="Success"):
     try:
@@ -220,6 +229,8 @@ async def quickbooks_expenses(request: Request):
             return {"error": f"QuickBooks API failed: {r.text}"}
     except Exception as e:
         return {"error": str(e)}
+
+# ✅ Ensure CORS again for safety
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
