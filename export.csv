@@ -1,0 +1,29 @@
+Time,Type,Vendor,Date,Items,Subtotal,Tax
+2025-10-07 18:20:56,Chat Log,HELLO,"Hello! How can I assist you with your taxes, receipts, or mileage today?"
+2025-10-07 18:21:56,Receipt Upload,Seaside Bistro,2025-09-28T19:24:00Z,,37.5,2.63,48.12,VISA **** 4242,Thank you for dining with us! This is a sample receipt generated for testing and bookkeeping purposes.
+2025-10-07 18:32:39,Chat Log,hello how are you doing,"Hello! As an AI, I don't have feelings, but I'm ready and equipped to assist you. How can I help you with your taxes, receipts, or mileage today?"
+2025-10-07 18:41:42,Chat Log,hello log a business lunch at Olive Garden today,"To assist you in logging your business lunch at Olive Garden, I'll need some additional information. When logging a business meal for tax purposes, it is important to keep detailed records that include the following:
+
+1. The date and location of the meal (Olive Garden in this case).
+2. The total cost of the meal, including tax and tip.
+3. The names of the people in attendance and their business relationships to you.
+4. The business purpose of the meal or the nature of the discussion.
+
+Here is an example of how you might log this information:
+
+- **Date:** [Insert date of the business lunch]
+- **Location:** Olive Garden
+- **Attendees:** [Your name], [Name of client or business associate], and their relationship to you/business title.
+- **Purpose of Meal:** Discussing [the partnership agreement, quarterly sales, project updates, etc.]
+- **Total Cost:** [Insert total cost, make sure to keep the receipt]
+
+Remember to save the receipt from the meal as it is a necessary document to substantiate the expenditure in case of an audit.
+
+Please provide the necessary details to complete the log, or you can log it accordingly in your records using the above format as a template."
+2025-10-07 20:37:14,Receipt Upload,Seaside Bistro,2025-09-28," x1 $$24.50
+ x1 $$8.00
+ x2 $$5.00",$37.50,$2.63,$48.12,VISA **** 4242,Thank you for dining with us! This is a sample receipt generated for testing and bookkeeping purposes.
+2025-10-07 22:46:04,Chat Log,hello,"Hello! How can I assist you with your taxes, receipts, and mileage today?"
+2025-10-08 15:49:28,Receipt Upload,Seaside Bistro,2025-09-28,"Grilled Salmon x1 $24.5
+Caesar Salad x1 $8.0
+Bottle Water x2 $5.0",$37.50,$2.63,$48.12,VISA **** 4242,"{""Tip"": 8.0}"
