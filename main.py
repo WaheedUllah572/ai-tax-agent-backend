@@ -19,7 +19,7 @@ scope = [
     "https://www.googleapis.com/auth/spreadsheets",
 ]
 
-# ✅ Updated: Load credentials from environment variable instead of local file
+# ✅ Load credentials from environment variable instead of local file
 creds_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
 if not creds_json:
     raise Exception("❌ GOOGLE_CREDENTIALS_JSON not found in environment variables.")
@@ -58,13 +58,17 @@ def append_to_google_sheet(vendor, amount, category, txn_id, status="Success"):
 # ------------------ FASTAPI APP ------------------ #
 app = FastAPI()
 
+# ✅ Unified CORS configuration (only one block)
+allowed_origins = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "https://symbols-superb-icons-exhibitions.trycloudflare.com",
+    "https://ai-tax-agent-frontend.vercel.app",  # ✅ Vercel frontend domain
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://localhost:3000",
-        "https://symbols-superb-icons-exhibitions.trycloudflare.com",
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -229,18 +233,3 @@ async def quickbooks_expenses(request: Request):
             return {"error": f"QuickBooks API failed: {r.text}"}
     except Exception as e:
         return {"error": str(e)}
-
-# ✅ Ensure CORS again for safety
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://localhost:3000",
-        "https://symbols-superb-icons-exhibitions.trycloudflare.com",
-        "https://ai-tax-agent-frontend.vercel.app",  # ✅ Your Vercel domain
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
