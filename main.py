@@ -237,8 +237,10 @@ app.add_middleware(
         "http://localhost:3000",
         "https://localhost:3000",
         "https://symbols-superb-icons-exhibitions.trycloudflare.com",
+        "https://ai-tax-agent-frontend.vercel.app",  # ✅ Your Vercel domain
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
