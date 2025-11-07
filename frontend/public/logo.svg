@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:1"></stop>
+      <stop offset="100%" style="stop-color:#9333ea;stop-opacity:1"></stop>
+    </linearGradient>
+  </defs>
+
+  <!-- Brain / AI Head -->
+  <path d="M100,30 
+           C70,30 50,55 50,85 
+           C50,115 70,140 100,140 
+           C130,140 150,115 150,85 
+           C150,55 130,30 100,30 Z" fill="url(#grad)" stroke="white" stroke-width="4"></path>
+
+  <!-- Finance Arrow -->
+  <path d="M65,110 L85,90 L105,110 L135,70" stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+  <circle cx="135" cy="70" r="6" fill="white"></circle>
+
+  <!-- Text -->
+  <text x="50%" y="180" font-family="Poppins, sans-serif" font-size="28" font-weight="700" text-anchor="middle" fill="url(#grad)">
+    TaxMind AI
+  </text>
+</svg>

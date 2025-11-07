@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+python-multipart
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
+requests
+pandas
+pypdf2
+pytesseract
+opencv-python
+python-dotenv

@@ -1,0 +1,24 @@
+{"level":"error","time":"2025-10-25T20:28:32Z","message":"You have an existing certificate at C:\\Users\\wu090\\.cloudflared\\cert.pem which login would overwrite.\nIf this is intentional, please move or delete that file then run this command again.\n"}
+{"level":"error","time":"2025-10-25T20:28:42Z","message":"You have an existing certificate at C:\\Users\\wu090\\.cloudflared\\cert.pem which login would overwrite.\nIf this is intentional, please move or delete that file then run this command again.\n"}
+{"level":"info","time":"2025-10-25T20:31:40Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:32:33Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:33:26Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:34:19Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:35:12Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:36:04Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:36:58Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:37:50Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:38:43Z","message":"Waiting for login..."}
+{"level":"info","time":"2025-10-25T20:39:36Z","message":"Waiting for login..."}
+{"level":"error","error":"Failed to fetch resource","time":"2025-10-25T20:39:36Z","message":"Failed to write the certificate.\n\nYour browser will download the certificate instead. You will have to manually\ncopy it to the following path:\n\nC:\\Users\\wu090\\.cloudflared\\cert.pem\n"}
+{"level":"info","time":"2025-10-25T20:58:40Z","message":"Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps"}
+{"level":"info","time":"2025-10-25T20:58:40Z","message":"Requesting new quick Tunnel on trycloudflare.com..."}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"+--------------------------------------------------------------------------------------------+"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"|  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"|  https://proven-blades-reason-freeze.trycloudflare.com                                     |"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"+--------------------------------------------------------------------------------------------+"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"Version 2025.10.0 (Checksum 07ce5e7ffc805734797d37061654f5f0152de2a2da241bf52e90822e9b8fc724)"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"GOOS: windows, GOVersion: go1.24.6, GoArch: amd64"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"Settings: map[ha-connections:1 logfile:cloudflared.log loglevel:info protocol:quic url:http://localhost:8000]"}
+{"level":"info","time":"2025-10-25T20:58:47Z","message":"cloudflared will not automatically update on Windows systems."}
+{"level":"info","time":"2025-10-25T20:58:58Z","message":"Initiating graceful shutdown due to signal interrupt ..."}
