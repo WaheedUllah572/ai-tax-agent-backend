@@ -1,0 +1,110 @@
+[
+  {
+    "id": "dca6065c-f1d0-41d8-8e0d-880f4829beef",
+    "filename": "a34dce12-4d69-45af-8764-170c72b412dd.png",
+    "uploaded_at": "2026-04-05T18:01:13.977172",
+    "vendor": "mark & spencer",
+    "date": "2014-01-02",
+    "amount": 10.0,
+    "category": "Internal Transfer",
+    "document_type": "Receipt",
+    "deduction_type": "Not specified",
+    "status": "Pending",
+    "source": "upload",
+    "ai_extracted": true,
+    "ai_confidence": "high",
+    "manually_edited": false,
+    "irs_category": "Non-Deductible",
+    "deductible_percent": 0,
+    "deductible_amount": 0.0,
+    "rule_applied": "internal_transfer_rule",
+    "audit_log": [
+      {
+        "action": "created",
+        "by": "system",
+        "date": "2026-04-05T18:01:13.977196"
+      }
+    ]
+  },
+  {
+    "id": "ae0184bd-16e6-425d-8f79-6856e06ce823",
+    "filename": "13d32b3c-c7fb-4b38-b30b-c970d6a016e6.png",
+    "uploaded_at": "2026-04-05T18:04:18.321814",
+    "vendor": "uber",
+    "date": "2019-11-06",
+    "amount": 43.83,
+    "category": "Transportation",
+    "document_type": "Receipt",
+    "deduction_type": "",
+    "status": "Pending",
+    "source": "upload",
+    "ai_extracted": true,
+    "ai_confidence": "high",
+    "manually_edited": false,
+    "irs_category": "Schedule C - Car and Truck Expenses",
+    "deductible_percent": 100,
+    "deductible_amount": 43.83,
+    "rule_applied": "vehicle_expense_rule",
+    "audit_log": [
+      {
+        "action": "created",
+        "by": "system",
+        "date": "2026-04-05T18:04:18.321825"
+      }
+    ]
+  },
+  {
+    "id": "f3e04e44-1ebd-42eb-865f-0958a8b7b45b",
+    "filename": "20046d06-d51a-4562-a800-a5d60347aa84.PNG",
+    "uploaded_at": "2026-04-05T21:16:22.258433",
+    "vendor": "milky bakery",
+    "date": "2022-02-02",
+    "amount": 225.89,
+    "category": "Bakery Products",
+    "document_type": "Invoice",
+    "deduction_type": "",
+    "status": "Pending",
+    "source": "upload",
+    "ai_extracted": true,
+    "ai_confidence": "high",
+    "manually_edited": false,
+    "irs_category": "Schedule C - Other Expenses",
+    "deductible_percent": 100,
+    "deductible_amount": 225.89,
+    "rule_applied": "general_expense_rule",
+    "audit_log": [
+      {
+        "action": "created",
+        "by": "system",
+        "date": "2026-04-05T21:16:22.258465"
+      }
+    ]
+  },
+  {
+    "id": "63a97402-8814-411b-9fd8-9203cbffa436",
+    "filename": "bb23b796-4be4-4458-ac48-34cbdb393b66.jpg",
+    "uploaded_at": "2026-04-05T21:25:15.818688",
+    "vendor": "euro store lahore pak",
+    "date": "2020-07-03",
+    "amount": 10952.0,
+    "category": "",
+    "document_type": "Transaction Receipt",
+    "deduction_type": "",
+    "status": "Pending",
+    "source": "upload",
+    "ai_extracted": true,
+    "ai_confidence": "high",
+    "manually_edited": false,
+    "irs_category": "Schedule C - Other Expenses",
+    "deductible_percent": 100,
+    "deductible_amount": 10952.0,
+    "rule_applied": "general_expense_rule",
+    "audit_log": [
+      {
+        "action": "created",
+        "by": "system",
+        "date": "2026-04-05T21:25:15.818806"
+      }
+    ]
+  }
+]
