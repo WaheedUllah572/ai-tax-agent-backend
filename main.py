@@ -32,7 +32,11 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ✅ FIXED CORS (IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 🔥 Allow all for now (fixes your issue 100%)
+    allow_origins=[
+        "http://localhost:3000",
+        "https://ai-tax-agent-frontend.vercel.app",
+        "https://ai-tax-agent-frontend-l6kl8d5ps-waheed-ullahs-projects-0b4cca03.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
