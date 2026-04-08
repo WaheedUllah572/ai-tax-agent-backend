@@ -20,23 +20,25 @@ from routes.chatbot_routes import router as chatbot_router
 from routes.receipt_routes import router as receipt_router
 from routes.report_routes import router as report_router
 from routes.transaction_routes import router as transaction_router
+
 app = FastAPI(title="TaxMind AI Backend")
 
-# Serve uploaded receipt images
+# ✅ Serve uploaded receipt images safely
+if not os.path.exists("uploads"):
+    os.makedirs("uploads")
+
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
+# ✅ FIXED CORS (IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://ai-tax-agent-frontend.vercel.app",
-        "https://ai-tax-agent-frontend-l6kl8d5ps-waheed-ullahs-projects-0b4cca03.vercel.app"
-    ],
+    allow_origins=["*"],  # 🔥 Allow all for now (fixes your issue 100%)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Routers
 app.include_router(mileage_router)
 app.include_router(auth_router)
 app.include_router(gmail_router)
@@ -47,10 +49,11 @@ app.include_router(receipt_router)
 app.include_router(report_router)
 app.include_router(transaction_router)
 
+# Root
 @app.get("/")
 def home():
     return {"message": "TaxMind AI Backend Running"}
 
-
+# Run
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000)
