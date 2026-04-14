@@ -3,11 +3,15 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 from enum import Enum
 import re
+import os
+from openai import OpenAI
 
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
 
 router = APIRouter(tags=["Chatbot"])
 
+# ✅ OpenAI Client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # =====================================================
 # SESSION MODEL
@@ -29,7 +33,7 @@ def create_new_session():
         "stage": Stage.GREETING,
         "trip_details": {},
         "pending_trip_confirmation": None,
-        "awaiting_trip_edit": False,   # ✅ NEW FLAG
+        "awaiting_trip_edit": False,
     }
 
 
@@ -117,7 +121,7 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
     intent = detect_intent(msg)
 
     # =================================================
-    # 🚗 START TRIP (INITIAL DETECTION)
+    # 🚗 START TRIP
     # =================================================
     if intent == "start_mileage" and not session.get("awaiting_trip_edit"):
         entities = extract_trip_entities(msg)
@@ -134,19 +138,15 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
         )
 
     # =================================================
-    # ✏️ USER CLICKED EDIT
+    # ✏️ EDIT
     # =================================================
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
-        session["pending_trip_confirmation"] = None   # ✅ CLEAR IT
-        session["awaiting_trip_edit"] = True          # ✅ ENTER EDIT MODE
+        session["pending_trip_confirmation"] = None
+        session["awaiting_trip_edit"] = True
         return "Please type the corrected trip sentence."
 
-    # =================================================
-    # ✏️ USER PROVIDES CORRECTED SENTENCE
-    # =================================================
     if session.get("awaiting_trip_edit"):
         entities = extract_trip_entities(msg)
-
         session["pending_trip_confirmation"] = entities
         session["awaiting_trip_edit"] = False
 
@@ -160,7 +160,7 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
         )
 
     # =================================================
-    # ✅ CONFIRM START
+    # ✅ CONFIRM
     # =================================================
     if msg.lower() == "confirm" and session.get("pending_trip_confirmation"):
         entities = session["pending_trip_confirmation"]
@@ -170,12 +170,12 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
 
         session["trip_details"] = entities
         session["pending_trip_confirmation"] = None
-        session["awaiting_trip_edit"] = False   # ✅ CLEAN STATE
+        session["awaiting_trip_edit"] = False
 
         return "✅ Trip confirmed and tracking started."
 
     # =================================================
-    # 🛑 STOP TRIP
+    # 🛑 STOP
     # =================================================
     if intent == "stop_mileage":
         result = stop_mileage_tracking()
@@ -194,7 +194,24 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
             "📁 Saved to mileage log."
         )
 
-    return "I’m here to help."
+    # =================================================
+    # 🤖 AI RESPONSE (FINAL FIX)
+    # =================================================
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."},
+                {"role": "user", "content": msg}
+            ],
+            max_tokens=300
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print("AI ERROR:", e)
+        return "Sorry, I couldn’t process that. Please try again."
 
 
 # =====================================================

@@ -32,16 +32,11 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 # ✅ FIXED CORS (IMPORTANT)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://ai-tax-agent-frontend.vercel.app",
-    ],
-    allow_origin_regex="https://.*vercel\.app",
+    allow_origins=["*"],  # ✅ FINAL FIX
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # Routers
 app.include_router(mileage_router)
 app.include_router(auth_router)
