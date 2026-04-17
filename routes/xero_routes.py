@@ -145,7 +145,16 @@ async def xero_callback(request: Request):
     if not tenants:
         return JSONResponse({"error": "No tenants found"}, 400)
 
-    tenant = tenants[0]
+    # ✅ FIXED: PICK CORRECT TENANT
+    tenant = None
+    for t in tenants:
+        if t.get("tenantName"):  # valid tenant
+            tenant = t
+            break
+
+    if not tenant:
+        return JSONResponse({"error": "No valid tenant found"}, 400)
+
     tokens["tenant_id"] = tenant["tenantId"]
     tokens["tenant_name"] = tenant["tenantName"]
 
@@ -171,7 +180,7 @@ async def xero_customers():
     return {"customers": data.get("Contacts", []) if data else []}
 
 
-@router.get("/contacts")  # alias
+@router.get("/contacts")
 async def xero_contacts():
     data = xero_get("Contacts")
     return {"customers": data.get("Contacts", []) if data else []}
@@ -186,4 +195,4 @@ async def xero_invoices():
 @router.get("/accounts")
 async def xero_accounts():
     data = xero_get("Accounts")
-    return {"accounts": data.get("Accounts", []) if data else []}
+    return {"accounts": data.get("Accounts", []) if data else []} 
