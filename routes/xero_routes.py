@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 import os
-import json
 import requests
 import secrets
 from dotenv import load_dotenv
@@ -23,16 +22,17 @@ supabase = create_client(
     os.getenv("SUPABASE_KEY")
 )
 
-
 # =====================================================
-# TOKEN HELPERS (UPDATED TO SUPABASE)
+# TOKEN HELPERS
 # =====================================================
 def save_tokens(data: dict):
     try:
-        # delete old tokens (FIXED)
-        supabase.table("xero_tokens").delete().gt("id", "").execute()
+        # delete old tokens
+        supabase.table("xero_tokens").delete().neq(
+            "id", "00000000-0000-0000-0000-000000000000"
+        ).execute()
 
-        # insert new tokens
+        # insert new tokens (NO id field)
         res = supabase.table("xero_tokens").insert({
             "access_token": data["access_token"],
             "refresh_token": data["refresh_token"],
@@ -40,19 +40,24 @@ def save_tokens(data: dict):
             "tenant_name": data.get("tenant_name")
         }).execute()
 
-        print("SUPABASE INSERT RESULT:", res)
+        print("SUPABASE INSERT SUCCESS:", res)
 
     except Exception as e:
         print("SUPABASE ERROR:", str(e))
 
 
 def load_tokens():
-    res = supabase.table("xero_tokens").select("*").limit(1).execute()
+    try:
+        res = supabase.table("xero_tokens").select("*").limit(1).execute()
 
-    if not res.data:
+        if not res.data:
+            return None
+
+        return res.data[0]
+
+    except Exception as e:
+        print("SUPABASE LOAD ERROR:", str(e))
         return None
-
-    return res.data[0]
 
 
 def refresh_xero_token():
@@ -76,6 +81,7 @@ def refresh_xero_token():
 
     new_tokens["tenant_id"] = tokens["tenant_id"]
     new_tokens["tenant_name"] = tokens.get("tenant_name")
+
     save_tokens(new_tokens)
     return new_tokens
 
