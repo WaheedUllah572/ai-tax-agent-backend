@@ -28,16 +28,22 @@ supabase = create_client(
 # TOKEN HELPERS (UPDATED TO SUPABASE)
 # =====================================================
 def save_tokens(data: dict):
-    # delete old tokens
-    supabase.table("xero_tokens").delete().neq("id", "").execute()
+    try:
+        # delete old tokens (FIXED)
+        supabase.table("xero_tokens").delete().gt("id", "").execute()
 
-    # insert new tokens
-    supabase.table("xero_tokens").insert({
-        "access_token": data["access_token"],
-        "refresh_token": data["refresh_token"],
-        "tenant_id": data["tenant_id"],
-        "tenant_name": data.get("tenant_name")
-    }).execute()
+        # insert new tokens
+        res = supabase.table("xero_tokens").insert({
+            "access_token": data["access_token"],
+            "refresh_token": data["refresh_token"],
+            "tenant_id": data["tenant_id"],
+            "tenant_name": data.get("tenant_name")
+        }).execute()
+
+        print("SUPABASE INSERT RESULT:", res)
+
+    except Exception as e:
+        print("SUPABASE ERROR:", str(e))
 
 
 def load_tokens():
@@ -162,7 +168,6 @@ async def xero_callback(request: Request):
     if not tenants:
         return JSONResponse({"error": "No tenants found"}, 400)
 
-    # ✅ FIXED: PICK CORRECT TENANT
     tenant = None
     for t in tenants:
         if t.get("tenantName"):
