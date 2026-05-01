@@ -5,6 +5,7 @@ import json
 import requests
 import secrets
 from dotenv import load_dotenv
+from supabase import create_client
 
 load_dotenv()
 
@@ -14,22 +15,38 @@ XERO_CLIENT_ID = os.getenv("XERO_CLIENT_ID")
 XERO_CLIENT_SECRET = os.getenv("XERO_CLIENT_SECRET")
 XERO_REDIRECT_URI = os.getenv("XERO_REDIRECT_URI")
 
-TOKEN_PATH = "xero_tokens.json"
+# =====================================================
+# 🆕 SUPABASE CONNECTION
+# =====================================================
+supabase = create_client(
+    os.getenv("SUPABASE_URL"),
+    os.getenv("SUPABASE_KEY")
+)
 
 
 # =====================================================
-# TOKEN HELPERS
+# TOKEN HELPERS (UPDATED TO SUPABASE)
 # =====================================================
 def save_tokens(data: dict):
-    with open(TOKEN_PATH, "w") as f:
-        json.dump(data, f, indent=2)
+    # delete old tokens
+    supabase.table("xero_tokens").delete().neq("id", "").execute()
+
+    # insert new tokens
+    supabase.table("xero_tokens").insert({
+        "access_token": data["access_token"],
+        "refresh_token": data["refresh_token"],
+        "tenant_id": data["tenant_id"],
+        "tenant_name": data.get("tenant_name")
+    }).execute()
 
 
 def load_tokens():
-    if not os.path.exists(TOKEN_PATH):
+    res = supabase.table("xero_tokens").select("*").limit(1).execute()
+
+    if not res.data:
         return None
-    with open(TOKEN_PATH, "r") as f:
-        return json.load(f)
+
+    return res.data[0]
 
 
 def refresh_xero_token():
@@ -148,7 +165,7 @@ async def xero_callback(request: Request):
     # ✅ FIXED: PICK CORRECT TENANT
     tenant = None
     for t in tenants:
-        if t.get("tenantName"):  # valid tenant
+        if t.get("tenantName"):
             tenant = t
             break
 
@@ -172,7 +189,7 @@ async def xero_status():
 
 
 # =====================================================
-# DATA ROUTES (STANDARDIZED RESPONSE)
+# DATA ROUTES
 # =====================================================
 @router.get("/customers")
 async def xero_customers():
@@ -195,4 +212,4 @@ async def xero_invoices():
 @router.get("/accounts")
 async def xero_accounts():
     data = xero_get("Accounts")
-    return {"accounts": data.get("Accounts", []) if data else []} 
+    return {"accounts": data.get("Accounts", []) if data else []}
