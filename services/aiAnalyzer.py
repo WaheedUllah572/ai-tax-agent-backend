@@ -12,33 +12,36 @@ def normalize_amount(amount):
     try:
         original = str(amount)
 
-        if isinstance(amount, str):
-            # Keep digits and separators
-            cleaned = re.sub(r"[^\d.,]", "", amount)
+        if not original:
+            return 0.0
 
-            # Case 1: has comma → normal thousands
-            if "," in cleaned:
-                return float(cleaned.replace(",", ""))
+        # Remove currency symbols and text
+        cleaned = re.sub(r"[^\d.,]", "", original)
 
-            # Case 2: has dot but likely thousands separator
-            if "." in cleaned:
-                parts = cleaned.split(".")
-                if len(parts[-1]) == 3:  # e.g., 1.250 → 1250
-                    return float(cleaned.replace(".", ""))
+        if cleaned == "":
+            return 0.0
 
-            value = float(cleaned)
+        # Handle comma (thousands separator)
+        if "," in cleaned:
+            cleaned = cleaned.replace(",", "")
 
-            # OCR decimal shift fix
-            digits = len(re.sub(r"[^\d]", "", original))
+        # Handle dot confusion (OCR issues like 1.250 vs 1250)
+        if "." in cleaned:
+            parts = cleaned.split(".")
+            if len(parts[-1]) == 3 and len(parts) > 1:
+                cleaned = cleaned.replace(".", "")
 
-            if value < 10 and digits >= 4:
-                return value * 1000
-            elif value < 100 and digits >= 4:
-                return value * 10
+        value = float(cleaned)
 
-            return value
+        # OCR decimal shift correction
+        digits = len(re.sub(r"[^\d]", "", original))
 
-        return float(amount)
+        if value < 10 and digits >= 4:
+            value = value * 1000
+        elif value < 100 and digits >= 4:
+            value = value * 10
+
+        return value
 
     except:
         return 0.0
@@ -104,6 +107,10 @@ You are a professional financial document analyzer.
 
 Extract structured data from receipts, invoices, or tax documents.
 
+IMPORTANT:
+- Amount must be numeric only (example: 1250.50)
+- Do NOT include currency symbols like Rs, $, etc.
+
 Return STRICT JSON:
 
 {
@@ -133,6 +140,8 @@ Return STRICT JSON:
         )
 
         content = response.choices[0].message.content
+
+        # CLEAN RESPONSE (VERY IMPORTANT)
         content = content.strip()
         content = re.sub(r"```json", "", content)
         content = re.sub(r"```", "", content)
@@ -140,14 +149,13 @@ Return STRICT JSON:
 
         data = json.loads(content)
 
-        # NORMALIZE DATA
+        # NORMALIZE
         data["amount"] = normalize_amount(data.get("amount"))
         data["date"] = normalize_date(data.get("date"))
         data["vendor"] = (data.get("vendor") or "").lower().strip()
 
-        # ADD CONFIDENCE SCORE
-        confidence = calculate_confidence(data)
-        data["ai_confidence"] = confidence
+        # CONFIDENCE
+        data["ai_confidence"] = calculate_confidence(data)
 
         return data
 

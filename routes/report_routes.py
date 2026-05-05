@@ -4,8 +4,17 @@ from models.storage import get_receipts
 import csv
 import os
 from datetime import datetime
+import re
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
+
+
+def safe_amount(value):
+    try:
+        cleaned = re.sub(r"[^\d.]", "", str(value))
+        return float(cleaned) if cleaned else 0.0
+    except:
+        return 0.0
 
 
 @router.get("/tax-report")
@@ -16,14 +25,10 @@ def generate_tax_report():
 
     for r in receipts:
         deduction = r.get("deduction_type", "Other")
-        try:
-            amount = float(str(r.get("amount", 0)).replace("$", "").replace(",", ""))
-        except:
-            amount = 0.0
+        amount = safe_amount(r.get("amount", 0))
 
         totals[deduction] = totals.get(deduction, 0) + amount
 
-    # Ensure uploads folder exists
     os.makedirs("uploads", exist_ok=True)
 
     filename = f"tax_report_{int(datetime.utcnow().timestamp())}.csv"

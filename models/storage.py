@@ -5,7 +5,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 RECEIPT_FILE = os.path.join(BASE_DIR, "receipts.json")
 MILEAGE_FILE = os.path.join(BASE_DIR, "mileage.json")
-TRANSACTION_FILE = os.path.join(BASE_DIR, "transactions.json")  # NEW
+TRANSACTION_FILE = os.path.join(BASE_DIR, "transactions.json")
 
 
 def load_data(file_path):
@@ -14,7 +14,8 @@ def load_data(file_path):
 
     with open(file_path, "r") as f:
         try:
-            return json.load(f)
+            data = json.load(f)
+            return data
         except:
             return []
 
@@ -25,7 +26,8 @@ def save_data(file_path, data):
 
 
 def get_receipts():
-    return load_data(RECEIPT_FILE)
+    data = load_data(RECEIPT_FILE)
+    return data
 
 
 def save_receipts(data):
@@ -40,7 +42,6 @@ def save_mileage(data):
     save_data(MILEAGE_FILE, data)
 
 
-# NEW — TRANSACTIONS
 def get_transactions():
     return load_data(TRANSACTION_FILE)
 
