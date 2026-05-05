@@ -8,6 +8,9 @@ from services.aiAnalyzer import analyze_receipt_image
 from services.irs_rules import apply_irs_rules
 from models.storage import get_receipts, save_receipts
 
+# ✅ IMPORT THIS
+from routes.xero_routes import xero_create_bill
+
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
 UPLOAD_FOLDER = "uploads"
@@ -30,7 +33,6 @@ async def upload_receipt(file: UploadFile = File(...)):
 
     analyzed_data = await analyze_receipt_image(contents)
 
-    # APPLY IRS RULES
     irs_data = apply_irs_rules(
         analyzed_data.get("category"),
         analyzed_data.get("amount")
@@ -48,17 +50,17 @@ async def upload_receipt(file: UploadFile = File(...)):
         "deduction_type": analyzed_data.get("deduction_type", "Uncategorized"),
         "status": "Pending",
 
-        # NEW FIELDS
         "source": "upload",
         "ai_extracted": True,
         "ai_confidence": analyzed_data.get("ai_confidence", "low"),
         "manually_edited": False,
 
-        # IRS RULES
         "irs_category": irs_data["irs_category"],
         "deductible_percent": irs_data["deductible_percent"],
         "deductible_amount": irs_data["deductible_amount"],
         "rule_applied": irs_data["rule_applied"],
+
+        "xero_synced": False,
 
         "audit_log": [
             {
@@ -73,10 +75,7 @@ async def upload_receipt(file: UploadFile = File(...)):
     receipts.append(receipt_record)
     save_receipts(receipts)
 
-    return {
-        "success": True,
-        "receipt": receipt_record
-    }
+    return {"success": True, "receipt": receipt_record}
 
 
 @router.get("/all")
@@ -91,7 +90,15 @@ async def approve_receipt(receipt_id: str):
 
     for r in receipts:
         if r["id"] == receipt_id:
+
             r["status"] = "Approved"
+
+            # ✅ SEND TO XERO
+            success = xero_create_bill(r)
+
+            if success:
+                r["xero_synced"] = True
+
             r["audit_log"].append({
                 "action": "approved",
                 "by": "user",
@@ -99,54 +106,5 @@ async def approve_receipt(receipt_id: str):
             })
 
     save_receipts(receipts)
-
-    return {"success": True}
-
-
-@router.put("/update/{receipt_id}")
-async def update_receipt(receipt_id: str, data: dict):
-
-    receipts = get_receipts()
-
-    for r in receipts:
-        if r["id"] == receipt_id:
-            r["vendor"] = data.get("vendor", r["vendor"])
-            r["date"] = data.get("date", r["date"])
-            r["amount"] = data.get("amount", r["amount"])
-            r["category"] = data.get("category", r["category"])
-            r["document_type"] = data.get("document_type", r["document_type"])
-
-            r["manually_edited"] = True
-            r["audit_log"].append({
-                "action": "edited",
-                "by": "user",
-                "date": datetime.utcnow().isoformat()
-            })
-
-    save_receipts(receipts)
-
-    return {"success": True}
-
-
-@router.delete("/{receipt_id}")
-async def delete_receipt(receipt_id: str):
-
-    receipts = get_receipts()
-
-    updated = []
-    deleted_file = None
-
-    for r in receipts:
-        if r["id"] == receipt_id:
-            deleted_file = r["filename"]
-        else:
-            updated.append(r)
-
-    if deleted_file:
-        file_path = os.path.join(UPLOAD_FOLDER, deleted_file)
-        if os.path.exists(file_path):
-            os.remove(file_path)
-
-    save_receipts(updated)
 
     return {"success": True}
