@@ -11,11 +11,9 @@ router = APIRouter(prefix="/reports", tags=["Reports"])
 
 def safe_amount(value):
     try:
-        cleaned = re.sub(r"[^\d.]", "", str(value))
-        return float(cleaned) if cleaned else 0.0
+        return float(value)
     except:
         return 0.0
-
 
 @router.get("/tax-report")
 def generate_tax_report():

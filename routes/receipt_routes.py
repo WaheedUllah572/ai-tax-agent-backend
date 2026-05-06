@@ -108,3 +108,26 @@ async def approve_receipt(receipt_id: str):
     save_receipts(receipts)
 
     return {"success": True}
+@router.delete("/{receipt_id}")
+async def delete_receipt(receipt_id: str):
+
+    receipts = get_receipts()
+
+    new_receipts = []
+    deleted_file = None
+
+    for r in receipts:
+        if r["id"] == receipt_id:
+            deleted_file = r["filename"]
+        else:
+            new_receipts.append(r)
+
+    if deleted_file:
+        file_path = os.path.join(UPLOAD_FOLDER, deleted_file)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+    # ✅ IMPORTANT FIX
+    save_receipts(new_receipts)
+
+    return {"success": True, "receipts": new_receipts}

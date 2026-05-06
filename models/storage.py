@@ -12,13 +12,11 @@ def load_data(file_path):
     if not os.path.exists(file_path):
         return []
 
-    with open(file_path, "r") as f:
-        try:
-            data = json.load(f)
-            return data
-        except:
-            return []
-
+    try:
+        with open(file_path, "r") as f:
+            return json.load(f)
+    except:
+        return []
 
 def save_data(file_path, data):
     with open(file_path, "w") as f:
