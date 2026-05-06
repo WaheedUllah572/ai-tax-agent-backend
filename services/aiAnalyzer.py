@@ -76,7 +76,7 @@ def normalize_date(date_str):
         except:
             continue
 
-    return date_str
+    return ""
 
 
 def calculate_confidence(data: dict) -> str:
@@ -91,7 +91,21 @@ def calculate_confidence(data: dict) -> str:
     if data.get("date"):
         score += 1
 
-    return ["low", "medium", "high"][score - 1] if score > 0 else "low"
+    if score == 3:
+        return "high"
+    elif score == 2:
+        return "medium"
+    else:
+        return "low"
+
+
+# ✅ SAFE JSON PARSER (CRITICAL FIX)
+def safe_parse(content):
+    try:
+        content = re.sub(r"```json|```", "", content).strip()
+        return json.loads(content)
+    except:
+        return None
 
 
 async def analyze_receipt_image(file_bytes: bytes) -> dict:
@@ -99,14 +113,22 @@ async def analyze_receipt_image(file_bytes: bytes) -> dict:
         base64_image = base64.b64encode(file_bytes).decode("utf-8")
 
         response = client.chat.completions.create(
+            # ✅ BEST AVAILABLE MODEL FOR YOUR API
             model="gpt-4o",
             messages=[
                 {
                     "role": "system",
                     "content": """
-Extract receipt data.
+You are a financial receipt analyzer.
 
-Return JSON:
+STRICT RULES:
+- Extract EXACT amount (no rounding, no guessing)
+- Return numeric amount only (example: 10952.00)
+- Detect currency (PKR or USD)
+- Extract vendor, date, category
+
+Return ONLY JSON:
+
 {
   "vendor": "",
   "date": "",
@@ -121,7 +143,7 @@ Return JSON:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze receipt."},
+                        {"type": "text", "text": "Extract data from this receipt."},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -135,16 +157,31 @@ Return JSON:
         )
 
         content = response.choices[0].message.content
-        content = re.sub(r"```json|```", "", content).strip()
 
-        data = json.loads(content)
+        data = safe_parse(content)
 
-        raw_text = str(data.get("amount", "")) + str(data)
+        # ✅ HARD FAIL SAFE (NO MORE "processing error")
+        if not data:
+            print("AI JSON PARSE FAILED")
+            return {
+                "vendor": "unknown",
+                "date": "",
+                "amount": 0.0,
+                "currency": "UNKNOWN",
+                "category": "Uncategorized",
+                "document_type": "Unknown",
+                "deduction_type": "Uncategorized",
+                "ai_confidence": "low"
+            }
+
+        raw_text = str(data)
 
         data["currency"] = detect_currency(raw_text)
         data["amount"] = normalize_amount(data.get("amount"))
         data["date"] = normalize_date(data.get("date"))
         data["vendor"] = (data.get("vendor") or "").lower().strip()
+        data["category"] = data.get("category") or "Uncategorized"
+        data["deduction_type"] = data.get("deduction_type") or "Uncategorized"
 
         data["ai_confidence"] = calculate_confidence(data)
 
@@ -152,6 +189,7 @@ Return JSON:
 
     except Exception as e:
         print("OPENAI ERROR:", e)
+
         return {
             "vendor": "processing error",
             "date": "",
