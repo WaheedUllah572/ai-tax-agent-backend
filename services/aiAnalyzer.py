@@ -11,7 +11,8 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def detect_currency(text):
     text = text.lower()
 
-    if "rs" in text or "pkr" in text or "₨" in text:
+    # STRONG detection
+    if "pkr" in text or "rs" in text or "₨" in text:
         return "PKR"
     if "$" in text or "usd" in text:
         return "USD"
@@ -99,7 +100,6 @@ def calculate_confidence(data: dict) -> str:
         return "low"
 
 
-# ✅ SAFE JSON PARSER (CRITICAL FIX)
 def safe_parse(content):
     try:
         content = re.sub(r"```json|```", "", content).strip()
@@ -113,22 +113,19 @@ async def analyze_receipt_image(file_bytes: bytes) -> dict:
         base64_image = base64.b64encode(file_bytes).decode("utf-8")
 
         response = client.chat.completions.create(
-            # ✅ BEST AVAILABLE MODEL FOR YOUR API
             model="gpt-4o",
             messages=[
                 {
                     "role": "system",
                     "content": """
-You are a financial receipt analyzer.
+Extract receipt data accurately.
 
-STRICT RULES:
-- Extract EXACT amount (no rounding, no guessing)
-- Return numeric amount only (example: 10952.00)
-- Detect currency (PKR or USD)
-- Extract vendor, date, category
+IMPORTANT:
+- Extract exact amount (no guessing)
+- Detect currency (PKR, USD)
+- Return numeric amount only
 
-Return ONLY JSON:
-
+Return JSON:
 {
   "vendor": "",
   "date": "",
@@ -143,7 +140,7 @@ Return ONLY JSON:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Extract data from this receipt."},
+                        {"type": "text", "text": "Analyze this receipt."},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -157,12 +154,9 @@ Return ONLY JSON:
         )
 
         content = response.choices[0].message.content
-
         data = safe_parse(content)
 
-        # ✅ HARD FAIL SAFE (NO MORE "processing error")
         if not data:
-            print("AI JSON PARSE FAILED")
             return {
                 "vendor": "unknown",
                 "date": "",
@@ -174,14 +168,14 @@ Return ONLY JSON:
                 "ai_confidence": "low"
             }
 
-        raw_text = str(data)
+        # 🔥 CRITICAL FIX → USE FULL RAW TEXT
+        raw_text = content + str(data)
 
         data["currency"] = detect_currency(raw_text)
         data["amount"] = normalize_amount(data.get("amount"))
         data["date"] = normalize_date(data.get("date"))
         data["vendor"] = (data.get("vendor") or "").lower().strip()
         data["category"] = data.get("category") or "Uncategorized"
-        data["deduction_type"] = data.get("deduction_type") or "Uncategorized"
 
         data["ai_confidence"] = calculate_confidence(data)
 

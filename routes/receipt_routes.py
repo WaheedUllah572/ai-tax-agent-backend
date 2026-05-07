@@ -47,7 +47,7 @@ async def upload_receipt(file: UploadFile = File(...)):
         "amount": analyzed_data.get("amount"),
         "category": analyzed_data.get("category"),
         "document_type": analyzed_data.get("document_type"),
-        "deduction_type": analyzed_data.get("deduction_type", "Uncategorized"),
+       "deduction_type": irs_data["rule_applied"],
         "status": "Pending",
 
         "source": "upload",
