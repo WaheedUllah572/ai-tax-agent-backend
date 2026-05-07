@@ -4,71 +4,66 @@ import base64
 import re
 from datetime import datetime
 from openai import OpenAI
+import pytesseract
+from PIL import Image
+import io
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def detect_currency(text):
-    text = text.lower()
+# =============================
+# OCR STEP (PERMANENT FIX)
+# =============================
+def extract_text_from_image(file_bytes):
+    try:
+        image = Image.open(io.BytesIO(file_bytes))
+        text = pytesseract.image_to_string(image)
+        return text.lower()
+    except:
+        return ""
 
-    # STRONG detection
+
+# =============================
+# STRONG AMOUNT DETECTION
+# =============================
+def extract_amount_from_text(text):
+    matches = re.findall(r"(\d{1,3}(?:[,\.]\d{3})*(?:\.\d{2})?)", text)
+
+    if not matches:
+        return 0.0
+
+    values = []
+    for m in matches:
+        cleaned = m.replace(",", "")
+        try:
+            values.append(float(cleaned))
+        except:
+            pass
+
+    return max(values) if values else 0.0
+
+
+# =============================
+# STRONG CURRENCY DETECTION
+# =============================
+def detect_currency(text):
     if "pkr" in text or "rs" in text or "₨" in text:
         return "PKR"
     if "$" in text or "usd" in text:
         return "USD"
-
     return "UNKNOWN"
-
-
-def normalize_amount(amount):
-    try:
-        original = str(amount)
-
-        if not original:
-            return 0.0
-
-        cleaned = re.sub(r"[^\d.,]", "", original)
-
-        if cleaned == "":
-            return 0.0
-
-        if "," in cleaned:
-            cleaned = cleaned.replace(",", "")
-
-        if "." in cleaned:
-            parts = cleaned.split(".")
-            if len(parts[-1]) == 3 and len(parts) > 1:
-                cleaned = cleaned.replace(".", "")
-
-        value = float(cleaned)
-
-        digits = len(re.sub(r"[^\d]", "", original))
-
-        if value < 10 and digits >= 4:
-            value = value * 1000
-        elif value < 100 and digits >= 4:
-            value = value * 10
-
-        return value
-
-    except:
-        return 0.0
 
 
 def normalize_date(date_str):
     if not date_str:
         return ""
 
-    date_str = date_str.replace(",", "").strip()
-
     formats = [
         "%Y-%m-%d",
         "%d %B %Y",
         "%d %b %Y",
-        "%B %d %Y",
-        "%b %d %Y",
-        "%d-%m-%Y",
-        "%d/%m/%Y"
+        "%d/%m/%Y",
+        "%d-%m-%Y"
     ]
 
     for fmt in formats:
@@ -80,36 +75,28 @@ def normalize_date(date_str):
     return ""
 
 
-def calculate_confidence(data: dict) -> str:
+def calculate_confidence(data):
     score = 0
+    if data.get("vendor"): score += 1
+    if data.get("amount", 0) > 0: score += 1
+    if data.get("date"): score += 1
 
-    if data.get("vendor"):
-        score += 1
-
-    if data.get("amount", 0) > 0:
-        score += 1
-
-    if data.get("date"):
-        score += 1
-
-    if score == 3:
-        return "high"
-    elif score == 2:
-        return "medium"
-    else:
-        return "low"
+    return ["low", "medium", "high"][score - 1] if score > 0 else "low"
 
 
-def safe_parse(content):
-    try:
-        content = re.sub(r"```json|```", "", content).strip()
-        return json.loads(content)
-    except:
-        return None
-
-
+# =============================
+# MAIN FUNCTION (FIXED)
+# =============================
 async def analyze_receipt_image(file_bytes: bytes) -> dict:
     try:
+        # 🔥 STEP 1: OCR FIRST
+        raw_text = extract_text_from_image(file_bytes)
+
+        # 🔥 STEP 2: RULE-BASED EXTRACTION
+        amount = extract_amount_from_text(raw_text)
+        currency = detect_currency(raw_text)
+
+        # 🔥 STEP 3: AI ONLY FOR METADATA
         base64_image = base64.b64encode(file_bytes).decode("utf-8")
 
         response = client.chat.completions.create(
@@ -118,19 +105,12 @@ async def analyze_receipt_image(file_bytes: bytes) -> dict:
                 {
                     "role": "system",
                     "content": """
-Extract receipt data accurately.
-
-IMPORTANT:
-- Extract exact amount
-- Extract currency EXACTLY from receipt (PKR, USD, etc)
-- Do NOT guess currency
+Extract vendor, date, category.
 
 Return JSON:
 {
   "vendor": "",
   "date": "",
-  "amount": "",
-  "currency": "",
   "category": "",
   "document_type": "",
   "deduction_type": ""
@@ -140,7 +120,7 @@ Return JSON:
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": "Analyze this receipt."},
+                        {"type": "text", "text": "Analyze receipt."},
                         {
                             "type": "image_url",
                             "image_url": {
@@ -150,46 +130,33 @@ Return JSON:
                     ],
                 },
             ],
-            max_tokens=500,
+            max_tokens=300,
         )
 
         content = response.choices[0].message.content
-        data = safe_parse(content)
+        content = re.sub(r"```json|```", "", content).strip()
 
-        if not data:
-            return {
-                "vendor": "unknown",
-                "date": "",
-                "amount": 0.0,
-                "currency": "UNKNOWN",
-                "category": "Uncategorized",
-                "document_type": "Unknown",
-                "deduction_type": "Uncategorized",
-                "ai_confidence": "low"
-            }
+        data = json.loads(content)
 
-        # ✅ TRUST MODEL FIRST
-        currency = data.get("currency", "").upper()
+        result = {
+            "vendor": (data.get("vendor") or "unknown").lower(),
+            "date": normalize_date(data.get("date")),
+            "amount": amount,
+            "currency": currency,
+            "category": data.get("category") or "Uncategorized",
+            "document_type": data.get("document_type") or "Unknown",
+            "deduction_type": data.get("deduction_type") or "Uncategorized",
+        }
 
-        # fallback detection
-        if currency not in ["PKR", "USD"]:
-            currency = detect_currency(content)
+        result["ai_confidence"] = calculate_confidence(result)
 
-        data["currency"] = currency
-        data["amount"] = normalize_amount(data.get("amount"))
-        data["date"] = normalize_date(data.get("date"))
-        data["vendor"] = (data.get("vendor") or "").lower().strip()
-        data["category"] = data.get("category") or "Uncategorized"
-
-        data["ai_confidence"] = calculate_confidence(data)
-
-        return data
+        return result
 
     except Exception as e:
-        print("OPENAI ERROR:", e)
+        print("ERROR:", e)
 
         return {
-            "vendor": "processing error",
+            "vendor": "unknown",
             "date": "",
             "amount": 0.0,
             "currency": "UNKNOWN",
