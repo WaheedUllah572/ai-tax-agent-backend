@@ -8,7 +8,6 @@ from services.aiAnalyzer import analyze_receipt_image
 from services.irs_rules import apply_irs_rules
 from models.storage import get_receipts, save_receipts
 
-# ✅ IMPORT THIS
 from routes.xero_routes import xero_create_bill
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
@@ -45,9 +44,13 @@ async def upload_receipt(file: UploadFile = File(...)):
         "vendor": analyzed_data.get("vendor"),
         "date": analyzed_data.get("date"),
         "amount": analyzed_data.get("amount"),
+        "currency": analyzed_data.get("currency", "USD"),  # ✅ FIX
         "category": analyzed_data.get("category"),
         "document_type": analyzed_data.get("document_type"),
-       "deduction_type": irs_data["rule_applied"],
+
+        # ✅ HUMAN READABLE
+        "deduction_type": irs_data["irs_category"],
+
         "status": "Pending",
 
         "source": "upload",
@@ -93,7 +96,6 @@ async def approve_receipt(receipt_id: str):
 
             r["status"] = "Approved"
 
-            # ✅ SEND TO XERO
             success = xero_create_bill(r)
 
             if success:
@@ -108,6 +110,8 @@ async def approve_receipt(receipt_id: str):
     save_receipts(receipts)
 
     return {"success": True}
+
+
 @router.delete("/{receipt_id}")
 async def delete_receipt(receipt_id: str):
 
@@ -127,7 +131,6 @@ async def delete_receipt(receipt_id: str):
         if os.path.exists(file_path):
             os.remove(file_path)
 
-    # ✅ IMPORTANT FIX
     save_receipts(new_receipts)
 
     return {"success": True, "receipts": new_receipts}

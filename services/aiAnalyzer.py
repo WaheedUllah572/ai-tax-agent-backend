@@ -121,9 +121,9 @@ async def analyze_receipt_image(file_bytes: bytes) -> dict:
 Extract receipt data accurately.
 
 IMPORTANT:
-- Extract exact amount (no guessing)
-- Detect currency (PKR, USD)
-- Return numeric amount only
+- Extract exact amount
+- Extract currency EXACTLY from receipt (PKR, USD, etc)
+- Do NOT guess currency
 
 Return JSON:
 {
@@ -168,10 +168,14 @@ Return JSON:
                 "ai_confidence": "low"
             }
 
-        # 🔥 CRITICAL FIX → USE FULL RAW TEXT
-        raw_text = content + str(data)
+        # ✅ TRUST MODEL FIRST
+        currency = data.get("currency", "").upper()
 
-        data["currency"] = detect_currency(raw_text)
+        # fallback detection
+        if currency not in ["PKR", "USD"]:
+            currency = detect_currency(content)
+
+        data["currency"] = currency
         data["amount"] = normalize_amount(data.get("amount"))
         data["date"] = normalize_date(data.get("date"))
         data["vendor"] = (data.get("vendor") or "").lower().strip()
