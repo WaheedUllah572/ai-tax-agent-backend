@@ -15,19 +15,22 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 # =========================================
-# IMAGE PREPROCESSING
+# LIGHT OCR FALLBACK ONLY
 # =========================================
 def preprocess_image(file_bytes):
+
     try:
 
-        image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+        image = Image.open(
+            io.BytesIO(file_bytes)
+        ).convert("RGB")
 
         img_np = np.array(image)
 
-        gray = cv2.cvtColor(img_np, cv2.COLOR_RGB2GRAY)
-
-        # LIGHT preprocessing only
-        # heavy thresholding was breaking clean receipts
+        gray = cv2.cvtColor(
+            img_np,
+            cv2.COLOR_RGB2GRAY
+        )
 
         gray = cv2.resize(
             gray,
@@ -40,18 +43,22 @@ def preprocess_image(file_bytes):
         return gray
 
     except Exception as e:
+
         print("PREPROCESS ERROR:", e)
+
         return None
 
 
 # =========================================
-# OCR EXTRACTION
+# OCR FALLBACK
 # =========================================
 def extract_text_from_image(file_bytes):
 
     try:
 
-        processed = preprocess_image(file_bytes)
+        processed = preprocess_image(
+            file_bytes
+        )
 
         if processed is None:
             return ""
@@ -66,39 +73,35 @@ def extract_text_from_image(file_bytes):
     except Exception as e:
 
         print("OCR ERROR:", e)
+
         return ""
 
 
 # =========================================
-# STRONG AMOUNT DETECTION
+# BACKUP AMOUNT EXTRACTION
 # =========================================
-def extract_amount_from_text(text):
+def fallback_extract_amount(text):
 
-    priority_patterns = [
+    patterns = [
 
-        # TOTAL
         r"grand total\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
         r"total\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
         r"amount\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
-        r"paid\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
-
         r"subtotal\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
         r"fare\s*[: ]\s*\$?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
-        # PKR
         r"pkr\.?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
         r"rs\.?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
-        # USD
         r"\$\s?(\d+(?:,\d{3})*(?:\.\d{2})?)"
     ]
 
-    for pattern in priority_patterns:
+    for pattern in patterns:
 
         matches = re.findall(
             pattern,
@@ -112,13 +115,13 @@ def extract_amount_from_text(text):
 
                 value = matches[0]
 
-                cleaned = (
+                value = (
                     str(value)
                     .replace(",", "")
                     .strip()
                 )
 
-                amount = float(cleaned)
+                amount = float(value)
 
                 if amount > 0:
                     return amount
@@ -130,9 +133,9 @@ def extract_amount_from_text(text):
 
 
 # =========================================
-# CURRENCY DETECTION
+# BACKUP CURRENCY DETECTION
 # =========================================
-def detect_currency(text):
+def fallback_currency(text):
 
     text = text.lower()
 
@@ -191,108 +194,28 @@ def normalize_date(date_str):
 
 
 # =========================================
-# AI METADATA EXTRACTION
-# =========================================
-def ai_extract_metadata(file_bytes):
-
-    try:
-
-        base64_image = base64.b64encode(
-            file_bytes
-        ).decode("utf-8")
-
-        response = client.chat.completions.create(
-
-            model="gpt-4o",
-
-            messages=[
-
-                {
-                    "role": "system",
-                    "content": """
-You are a receipt analyzer.
-
-Extract ONLY:
-- vendor
-- date
-- category
-- document_type
-
-STRICT RULES:
-- No explanations
-- Return ONLY valid JSON
-- Do NOT include markdown
-
-JSON format:
-
-{
-  "vendor": "",
-  "date": "",
-  "category": "",
-  "document_type": ""
-}
-"""
-                },
-
-                {
-                    "role": "user",
-                    "content": [
-
-                        {
-                            "type": "text",
-                            "text": "Analyze this receipt."
-                        },
-
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-
-            max_tokens=300
-        )
-
-        content = response.choices[0].message.content
-
-        content = re.sub(
-            r"```json|```",
-            "",
-            content
-        ).strip()
-
-        return json.loads(content)
-
-    except Exception as e:
-
-        print("AI ERROR:", e)
-
-        return {}
-
-
-# =========================================
-# SMART CATEGORY
+# SMART CATEGORY FALLBACK
 # =========================================
 def smart_category(vendor, text):
 
     combined = f"{vendor} {text}".lower()
 
-    if "uber" in combined or "lyft" in combined:
+    if (
+        "uber" in combined
+        or "lyft" in combined
+    ):
         return "Transportation"
 
     if (
-        "bakery" in combined
-        or "restaurant" in combined
+        "restaurant" in combined
         or "food" in combined
+        or "bakery" in combined
     ):
         return "Meals"
 
     if (
-        "electric" in combined
-        or "utility" in combined
+        "utility" in combined
+        or "electric" in combined
         or "internet" in combined
     ):
         return "Utilities"
@@ -303,13 +226,6 @@ def smart_category(vendor, text):
         or "travel" in combined
     ):
         return "Travel"
-
-    if (
-        "store" in combined
-        or "mart" in combined
-        or "shop" in combined
-    ):
-        return "General Expense"
 
     return "General Expense"
 
@@ -340,14 +256,14 @@ def calculate_confidence(data):
 
 
 # =========================================
-# MAIN FUNCTION
+# MAIN AI FUNCTION
 # =========================================
 async def analyze_receipt_image(file_bytes: bytes):
 
     try:
 
         # =================================
-        # STEP 1 OCR
+        # OCR BACKUP
         # =================================
         raw_text = extract_text_from_image(
             file_bytes
@@ -357,35 +273,121 @@ async def analyze_receipt_image(file_bytes: bytes):
         print(raw_text)
 
         # =================================
-        # STEP 2 AMOUNT
+        # GPT VISION
         # =================================
-        amount = extract_amount_from_text(
-            raw_text
-        )
-
-        print("EXTRACTED AMOUNT:", amount)
-
-        # =================================
-        # STEP 3 CURRENCY
-        # =================================
-        currency = detect_currency(raw_text)
-
-        print("CURRENCY:", currency)
-
-        # =================================
-        # STEP 4 AI METADATA
-        # =================================
-        ai_data = ai_extract_metadata(
+        base64_image = base64.b64encode(
             file_bytes
+        ).decode("utf-8")
+
+        response = client.chat.completions.create(
+
+            model="gpt-4o",
+
+            response_format={
+                "type": "json_object"
+            },
+
+            messages=[
+
+                {
+                    "role": "system",
+                    "content": """
+You are an expert receipt extraction AI.
+
+Extract:
+- vendor
+- date
+- final total amount
+- currency
+- category
+- document type
+
+CRITICAL RULES:
+- Extract FINAL TOTAL ONLY
+- Never guess
+- Never return 0 if amount exists
+- Uber receipts contain TOTAL at top
+- Return amount as numeric value
+- Return ONLY JSON
+
+JSON format:
+
+{
+  "vendor": "",
+  "date": "",
+  "amount": 0,
+  "currency": "",
+  "category": "",
+  "document_type": ""
+}
+"""
+                },
+
+                {
+                    "role": "user",
+                    "content": [
+
+                        {
+                            "type": "text",
+                            "text": "Extract receipt data accurately."
+                        },
+
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+
+            max_tokens=500
         )
+
+        content = response.choices[0].message.content
+
+        print("\n========== GPT RESPONSE ==========")
+        print(content)
+
+        data = json.loads(content)
+
+        # =================================
+        # AI PRIMARY EXTRACTION
+        # =================================
+        amount = float(
+            data.get("amount", 0)
+        )
+
+        currency = (
+            data.get("currency")
+            or ""
+        ).upper()
+
+        # =================================
+        # FALLBACK FIXES
+        # =================================
+        if amount <= 0:
+
+            print("USING OCR FALLBACK")
+
+            amount = fallback_extract_amount(
+                raw_text
+            )
+
+        if not currency:
+
+            currency = fallback_currency(
+                raw_text
+            )
 
         vendor = (
-            ai_data.get("vendor")
+            data.get("vendor")
             or "unknown"
         ).lower().strip()
 
         category = (
-            ai_data.get("category")
+            data.get("category")
             or smart_category(
                 vendor,
                 raw_text
@@ -400,7 +402,7 @@ async def analyze_receipt_image(file_bytes: bytes):
             "vendor": vendor,
 
             "date": normalize_date(
-                ai_data.get("date")
+                data.get("date")
             ),
 
             "amount": amount,
@@ -410,7 +412,7 @@ async def analyze_receipt_image(file_bytes: bytes):
             "category": category,
 
             "document_type": (
-                ai_data.get("document_type")
+                data.get("document_type")
                 or "Receipt"
             ),
 
@@ -420,6 +422,9 @@ async def analyze_receipt_image(file_bytes: bytes):
         result["ai_confidence"] = calculate_confidence(
             result
         )
+
+        print("\n========== FINAL RESULT ==========")
+        print(result)
 
         return result
 
