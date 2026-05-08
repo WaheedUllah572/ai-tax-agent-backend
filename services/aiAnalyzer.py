@@ -94,7 +94,11 @@ async def analyze_receipt_image(file_bytes: bytes) -> dict:
 
         # 🔥 STEP 2: RULE-BASED EXTRACTION
         amount = extract_amount_from_text(raw_text)
-        currency = detect_currency(raw_text)
+
+# ✅ HARD SAFETY (prevents 0.00 bug)
+        if amount == 0.0:
+            amount = extract_amount_from_text(raw_text.replace(" ", ""))
+            currency = detect_currency(raw_text)
 
         # 🔥 STEP 3: AI ONLY FOR METADATA
         base64_image = base64.b64encode(file_bytes).decode("utf-8")

@@ -7,7 +7,7 @@ import shutil
 from services.aiAnalyzer import analyze_receipt_image
 from services.irs_rules import apply_irs_rules
 from models.storage import get_receipts, save_receipts
-
+from services.currency_service import convert_to_usd
 from routes.xero_routes import xero_create_bill
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
@@ -32,19 +32,25 @@ async def upload_receipt(file: UploadFile = File(...)):
 
     analyzed_data = await analyze_receipt_image(contents)
 
-    irs_data = apply_irs_rules(
-        analyzed_data.get("category"),
-        analyzed_data.get("amount")
-    )
+    # ✅ REAL FIX: currency conversion
+    converted_amount = convert_to_usd(
+    analyzed_data.get("amount"),
+    analyzed_data.get("currency")
+)
 
+    irs_data = apply_irs_rules(
+    analyzed_data.get("category"),
+    converted_amount
+)
     receipt_record = {
         "id": str(uuid.uuid4()),
         "filename": unique_filename,
         "uploaded_at": datetime.utcnow().isoformat(),
         "vendor": analyzed_data.get("vendor"),
         "date": analyzed_data.get("date"),
-        "amount": analyzed_data.get("amount"),
-        "currency": analyzed_data.get("currency", "USD"),  # ✅ FIX
+        "amount": analyzed_data.get("amount"),       # original
+        "currency": analyzed_data.get("currency", "USD"),
+        "usd_amount": converted_amount,              # ✅ NEW
         "category": analyzed_data.get("category"),
         "document_type": analyzed_data.get("document_type"),
 
