@@ -41,20 +41,26 @@ def save_tokens(data: dict):
 def load_tokens():
     try:
         res = supabase.table("xero_tokens").select("*").limit(1).execute()
+
         if not res.data:
             return None
+
         return res.data[0]
+
     except Exception as e:
         print("SUPABASE LOAD ERROR:", str(e))
         return None
 
 
 def refresh_xero_token():
+
     tokens = load_tokens()
+
     if not tokens:
         return None
 
     url = "https://identity.xero.com/connect/token"
+
     payload = {
         "grant_type": "refresh_token",
         "refresh_token": tokens["refresh_token"],
@@ -63,20 +69,25 @@ def refresh_xero_token():
     }
 
     res = requests.post(url, data=payload)
+
     new_tokens = res.json()
 
     if "access_token" not in new_tokens:
+        print("TOKEN REFRESH FAILED:", new_tokens)
         return None
 
     new_tokens["tenant_id"] = tokens["tenant_id"]
     new_tokens["tenant_name"] = tokens.get("tenant_name")
 
     save_tokens(new_tokens)
+
     return new_tokens
 
 
 def get_headers():
+
     tokens = load_tokens()
+
     if not tokens:
         return None
 
@@ -88,10 +99,12 @@ def get_headers():
     }
 
 
-# ================= NEW: CREATE BILL =================
+# ================= CREATE BILL =================
 
 def xero_create_bill(receipt: dict):
+
     headers = get_headers()
+
     if not headers:
         return False
 
@@ -108,13 +121,17 @@ def xero_create_bill(receipt: dict):
                 "Description": receipt.get("category", "Expense"),
                 "Quantity": 1,
                 "UnitAmount": float(receipt.get("amount", 0)),
-                "AccountCode": "400"  # default expense account
+                "AccountCode": "400"
             }
         ],
         "Status": "AUTHORISED"
     }
 
-    res = requests.post(url, json=payload, headers=headers)
+    res = requests.post(
+        url,
+        json=payload,
+        headers=headers
+    )
 
     if res.status_code not in (200, 201):
         print("XERO CREATE BILL ERROR:", res.text)
@@ -127,6 +144,7 @@ def xero_create_bill(receipt: dict):
 
 @router.get("/connect")
 async def connect_xero():
+
     state = secrets.token_urlsafe(16)
 
     scopes = (
@@ -152,9 +170,14 @@ async def connect_xero():
 
 @router.get("/callback")
 async def xero_callback(request: Request):
+
     code = request.query_params.get("code")
+
     if not code:
-        return JSONResponse({"error": "Missing code"}, 400)
+        return JSONResponse(
+            {"error": "Missing code"},
+            400
+        )
 
     token_url = "https://identity.xero.com/connect/token"
 
@@ -166,18 +189,29 @@ async def xero_callback(request: Request):
         "client_secret": XERO_CLIENT_SECRET,
     }
 
-    tokens = requests.post(token_url, data=payload).json()
+    tokens = requests.post(
+        token_url,
+        data=payload
+    ).json()
 
     if "access_token" not in tokens:
-        return JSONResponse({"error": "Token exchange failed"}, 400)
+        return JSONResponse(
+            {"error": "Token exchange failed"},
+            400
+        )
 
     tenants = requests.get(
         "https://api.xero.com/connections",
-        headers={"Authorization": f"Bearer {tokens['access_token']}"},
+        headers={
+            "Authorization": f"Bearer {tokens['access_token']}"
+        },
     ).json()
 
     if not tenants:
-        return JSONResponse({"error": "No tenants found"}, 400)
+        return JSONResponse(
+            {"error": "No tenants found"},
+            400
+        )
 
     tenant = tenants[0]
 
@@ -186,9 +220,114 @@ async def xero_callback(request: Request):
 
     save_tokens(tokens)
 
-    return {"connected": True, "tenant": tenant["tenantName"]}
+    return {
+        "connected": True,
+        "tenant": tenant["tenantName"]
+    }
 
 
 @router.get("/status")
 async def xero_status():
-    return {"connected": bool(load_tokens())}
+
+    return {
+        "connected": bool(load_tokens())
+    }
+
+
+# ================= CUSTOMERS =================
+
+@router.get("/customers")
+async def get_customers():
+
+    headers = get_headers()
+
+    if not headers:
+        return JSONResponse(
+            {"error": "Not connected"},
+            401
+        )
+
+    url = "https://api.xero.com/api.xro/2.0/Contacts"
+
+    res = requests.get(
+        url,
+        headers=headers
+    )
+
+    if res.status_code != 200:
+        print("CUSTOMERS ERROR:", res.text)
+
+        return JSONResponse(
+            {"error": "Failed to fetch customers"},
+            400
+        )
+
+    data = res.json()
+
+    return data.get("Contacts", [])
+
+
+# ================= INVOICES =================
+
+@router.get("/invoices")
+async def get_invoices():
+
+    headers = get_headers()
+
+    if not headers:
+        return JSONResponse(
+            {"error": "Not connected"},
+            401
+        )
+
+    url = "https://api.xero.com/api.xro/2.0/Invoices"
+
+    res = requests.get(
+        url,
+        headers=headers
+    )
+
+    if res.status_code != 200:
+        print("INVOICES ERROR:", res.text)
+
+        return JSONResponse(
+            {"error": "Failed to fetch invoices"},
+            400
+        )
+
+    data = res.json()
+
+    return data.get("Invoices", [])
+
+
+# ================= ACCOUNTS =================
+
+@router.get("/accounts")
+async def get_accounts():
+
+    headers = get_headers()
+
+    if not headers:
+        return JSONResponse(
+            {"error": "Not connected"},
+            401
+        )
+
+    url = "https://api.xero.com/api.xro/2.0/Accounts"
+
+    res = requests.get(
+        url,
+        headers=headers
+    )
+
+    if res.status_code != 200:
+        print("ACCOUNTS ERROR:", res.text)
+
+        return JSONResponse(
+            {"error": "Failed to fetch accounts"},
+            400
+        )
+
+    data = res.json()
+
+    return data.get("Accounts", [])
