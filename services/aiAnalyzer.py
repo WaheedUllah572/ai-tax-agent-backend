@@ -11,6 +11,11 @@ import io
 import cv2
 import numpy as np
 
+from models.storage import (
+    get_vendor_rules,
+    save_vendor_rules
+)
+
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
@@ -231,6 +236,54 @@ def smart_category(vendor, text):
 
 
 # =========================================
+# VENDOR LEARNING
+# =========================================
+def learn_vendor(vendor, category, deduction_type):
+
+    if not vendor or vendor == "unknown":
+        return
+
+    vendors = get_vendor_rules()
+
+    existing = None
+
+    for v in vendors:
+
+        if v["vendor"] == vendor:
+            existing = v
+            break
+
+    if existing:
+
+        existing["category"] = category
+        existing["deduction_type"] = deduction_type
+        existing["times_used"] += 1
+
+    else:
+
+        vendors.append({
+            "vendor": vendor,
+            "category": category,
+            "deduction_type": deduction_type,
+            "times_used": 1
+        })
+
+    save_vendor_rules(vendors)
+
+
+def get_vendor_learning(vendor):
+
+    vendors = get_vendor_rules()
+
+    for v in vendors:
+
+        if v["vendor"] == vendor:
+            return v
+
+    return None
+
+
+# =========================================
 # CONFIDENCE
 # =========================================
 def calculate_confidence(data):
@@ -262,19 +315,10 @@ async def analyze_receipt_image(file_bytes: bytes):
 
     try:
 
-        # =================================
-        # OCR BACKUP
-        # =================================
         raw_text = extract_text_from_image(
             file_bytes
         )
 
-        print("\n========== OCR TEXT ==========")
-        print(raw_text)
-
-        # =================================
-        # GPT VISION
-        # =================================
         base64_image = base64.b64encode(
             file_bytes
         ).decode("utf-8")
@@ -302,24 +346,7 @@ Extract:
 - category
 - document type
 
-CRITICAL RULES:
-- Extract FINAL TOTAL ONLY
-- Never guess
-- Never return 0 if amount exists
-- Uber receipts contain TOTAL at top
-- Return amount as numeric value
-- Return ONLY JSON
-
-JSON format:
-
-{
-  "vendor": "",
-  "date": "",
-  "amount": 0,
-  "currency": "",
-  "category": "",
-  "document_type": ""
-}
+Return ONLY JSON.
 """
                 },
 
@@ -347,14 +374,8 @@ JSON format:
 
         content = response.choices[0].message.content
 
-        print("\n========== GPT RESPONSE ==========")
-        print(content)
-
         data = json.loads(content)
 
-        # =================================
-        # AI PRIMARY EXTRACTION
-        # =================================
         amount = float(
             data.get("amount", 0)
         )
@@ -364,12 +385,7 @@ JSON format:
             or ""
         ).upper()
 
-        # =================================
-        # FALLBACK FIXES
-        # =================================
         if amount <= 0:
-
-            print("USING OCR FALLBACK")
 
             amount = fallback_extract_amount(
                 raw_text
@@ -386,17 +402,41 @@ JSON format:
             or "unknown"
         ).lower().strip()
 
-        category = (
-            data.get("category")
-            or smart_category(
-                vendor,
-                raw_text
-            )
-        )
+        # =================================
+        # VENDOR LEARNING
+        # =================================
+        vendor_learning = get_vendor_learning(vendor)
 
-        # =================================
-        # FINAL RESULT
-        # =================================
+        if vendor_learning:
+
+            category = vendor_learning["category"]
+
+            learned_deduction = vendor_learning[
+                "deduction_type"
+            ]
+
+            learned_vendor = True
+
+        else:
+
+            category = (
+                data.get("category")
+                or smart_category(
+                    vendor,
+                    raw_text
+                )
+            )
+
+            learned_deduction = category
+
+            learned_vendor = False
+
+            learn_vendor(
+                vendor,
+                category,
+                learned_deduction
+            )
+
         result = {
 
             "vendor": vendor,
@@ -416,15 +456,14 @@ JSON format:
                 or "Receipt"
             ),
 
-            "deduction_type": category
+            "deduction_type": learned_deduction,
+
+            "vendor_learned": learned_vendor
         }
 
         result["ai_confidence"] = calculate_confidence(
             result
         )
-
-        print("\n========== FINAL RESULT ==========")
-        print(result)
 
         return result
 
@@ -447,6 +486,8 @@ JSON format:
             "document_type": "Receipt",
 
             "deduction_type": "General Expense",
+
+            "vendor_learned": False,
 
             "ai_confidence": "low"
         }
