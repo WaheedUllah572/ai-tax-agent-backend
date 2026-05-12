@@ -103,8 +103,14 @@ def fallback_extract_amount(text):
 
         r"rs\.?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
 
+        r"eur\.?\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
+
+        r"€\s?(\d+(?:,\d{3})*(?:\.\d{2})?)",
+
         r"\$\s?(\d+(?:,\d{3})*(?:\.\d{2})?)"
     ]
+
+    values = []
 
     for pattern in patterns:
 
@@ -114,14 +120,12 @@ def fallback_extract_amount(text):
             re.IGNORECASE
         )
 
-        if matches:
+        for match in matches:
 
             try:
 
-                value = matches[0]
-
                 value = (
-                    str(value)
+                    str(match)
                     .replace(",", "")
                     .strip()
                 )
@@ -129,10 +133,13 @@ def fallback_extract_amount(text):
                 amount = float(value)
 
                 if amount > 0:
-                    return amount
+                    values.append(amount)
 
             except:
                 pass
+
+    if values:
+        return max(values)
 
     return 0.0
 
@@ -151,6 +158,13 @@ def fallback_currency(text):
         or "₨" in text
     ):
         return "PKR"
+
+    if (
+        "eur" in text
+        or "€" in text
+        or "euro" in text
+    ):
+        return "EUR"
 
     if (
         "$" in text
@@ -315,10 +329,19 @@ async def analyze_receipt_image(file_bytes: bytes):
 
     try:
 
+        # =================================
+        # OCR BACKUP
+        # =================================
         raw_text = extract_text_from_image(
             file_bytes
         )
 
+        print("\n========== OCR TEXT ==========")
+        print(raw_text)
+
+        # =================================
+        # GPT VISION
+        # =================================
         base64_image = base64.b64encode(
             file_bytes
         ).decode("utf-8")
@@ -346,7 +369,22 @@ Extract:
 - category
 - document type
 
-Return ONLY JSON.
+CRITICAL:
+- Extract FINAL TOTAL ONLY
+- Return amount as numeric value
+- Do not include currency symbols in amount
+- Return ONLY JSON
+
+JSON FORMAT:
+
+{
+  "vendor": "",
+  "date": "",
+  "amount": 0,
+  "currency": "",
+  "category": "",
+  "document_type": ""
+}
 """
                 },
 
@@ -374,18 +412,46 @@ Return ONLY JSON.
 
         content = response.choices[0].message.content
 
+        print("\n========== GPT RESPONSE ==========")
+        print(content)
+
         data = json.loads(content)
 
-        amount = float(
-            data.get("amount", 0)
+        # =================================
+        # SAFE AMOUNT PARSING
+        # =================================
+        raw_amount = str(
+            data.get("amount", "0")
         )
 
+        raw_amount = re.sub(
+            r"[^\d.]",
+            "",
+            raw_amount
+        )
+
+        try:
+
+            amount = float(raw_amount)
+
+        except:
+
+            amount = 0.0
+
+        # =================================
+        # SAFE CURRENCY
+        # =================================
         currency = (
             data.get("currency")
             or ""
-        ).upper()
+        ).upper().strip()
 
-        if amount <= 0:
+        # =================================
+        # FALLBACK FIXES
+        # =================================
+        if amount <= 0.0:
+
+            print("USING OCR FALLBACK")
 
             amount = fallback_extract_amount(
                 raw_text
@@ -397,6 +463,9 @@ Return ONLY JSON.
                 raw_text
             )
 
+        # =================================
+        # SAFE VENDOR
+        # =================================
         vendor = (
             data.get("vendor")
             or "unknown"
@@ -405,15 +474,21 @@ Return ONLY JSON.
         # =================================
         # VENDOR LEARNING
         # =================================
-        vendor_learning = get_vendor_learning(vendor)
+        vendor_learning = get_vendor_learning(
+            vendor
+        )
 
         if vendor_learning:
 
-            category = vendor_learning["category"]
-
-            learned_deduction = vendor_learning[
-                "deduction_type"
+            category = vendor_learning[
+                "category"
             ]
+
+            learned_deduction = (
+                vendor_learning[
+                    "deduction_type"
+                ]
+            )
 
             learned_vendor = True
 
@@ -437,6 +512,9 @@ Return ONLY JSON.
                 learned_deduction
             )
 
+        # =================================
+        # FINAL RESULT
+        # =================================
         result = {
 
             "vendor": vendor,
@@ -456,14 +534,19 @@ Return ONLY JSON.
                 or "Receipt"
             ),
 
-            "deduction_type": learned_deduction,
+            "deduction_type":
+                learned_deduction,
 
-            "vendor_learned": learned_vendor
+            "vendor_learned":
+                learned_vendor
         }
 
-        result["ai_confidence"] = calculate_confidence(
-            result
-        )
+        result[
+            "ai_confidence"
+        ] = calculate_confidence(result)
+
+        print("\n========== FINAL RESULT ==========")
+        print(result)
 
         return result
 
@@ -485,7 +568,8 @@ Return ONLY JSON.
 
             "document_type": "Receipt",
 
-            "deduction_type": "General Expense",
+            "deduction_type":
+                "General Expense",
 
             "vendor_learned": False,
 
