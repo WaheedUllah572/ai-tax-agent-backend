@@ -31,7 +31,7 @@ def generate_tax_report():
         deduction = r.get("deduction_type", "Other")
 
         amount = safe_amount(
-            r.get("amount", 0)
+            r.get("usd_amount", r.get("amount", 0))
         )
 
         totals[deduction] = (
@@ -56,7 +56,7 @@ def generate_tax_report():
 
         writer.writerow([
             "Deduction Type",
-            "Total Amount"
+            "USD Total Amount"
         ])
 
         for k, v in totals.items():
@@ -69,7 +69,7 @@ def generate_tax_report():
         writer.writerow([])
 
         writer.writerow([
-            "TOTAL",
+            "TOTAL USD",
             f"{sum(totals.values()):.2f}"
         ])
 
@@ -113,8 +113,9 @@ def dashboard_analytics():
 
     for r in receipts:
 
+        # ✅ FIXED
         amount = safe_amount(
-            r.get("amount", 0)
+            r.get("usd_amount", r.get("amount", 0))
         )
 
         total_spending += amount
