@@ -158,6 +158,10 @@ def dashboard_analytics():
             pass
 
     top_vendor = "—"
+    needs_review_count = len([
+        r for r in receipts
+        if r.get("needs_review") is True
+    ])
 
     if vendor_map:
 
@@ -181,5 +185,7 @@ def dashboard_analytics():
 
         "category_data": category_map,
 
-        "vendor_data": vendor_map
+        "vendor_data": vendor_map,
+
+        "needs_review_count": needs_review_count
     }

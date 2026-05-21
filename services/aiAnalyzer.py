@@ -540,11 +540,16 @@ JSON FORMAT:
             "vendor_learned":
                 learned_vendor
         }
+        confidence = calculate_confidence(result)
 
-        result[
-            "ai_confidence"
-        ] = calculate_confidence(result)
+        result["ai_confidence"] = confidence
 
+        # =================================
+        # NEEDS REVIEW LOGIC
+        # =================================
+        result["needs_review"] = (
+            confidence != "high"
+        )
         print("\n========== FINAL RESULT ==========")
         print(result)
 

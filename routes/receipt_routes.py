@@ -57,11 +57,15 @@ async def upload_receipt(file: UploadFile = File(...)):
         # ✅ HUMAN READABLE
         "deduction_type": analyzed_data.get("deduction_type"),
         "vendor_learned": analyzed_data.get("vendor_learned", False),
-        "status": "Pending",
-
+        "status": (
+    "Needs Review"
+    if analyzed_data.get("needs_review")
+    else "Pending"
+),
         "source": "upload",
         "ai_extracted": True,
         "ai_confidence": analyzed_data.get("ai_confidence", "low"),
+        "needs_review": analyzed_data.get("needs_review", False),
         "manually_edited": False,
 
         "irs_category": irs_data["irs_category"],
