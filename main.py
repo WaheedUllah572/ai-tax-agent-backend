@@ -29,14 +29,17 @@ if not os.path.exists("uploads"):
 
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# ✅ FIXED CORS (IMPORTANT)
+# ✅ FIXED CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # ✅ FINAL FIX
+    allow_origins=[
+        "https://ai-tax-agent-frontend-cak9qyx92-waheed-ullahs-projects-0b4cca03.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # Routers
 app.include_router(mileage_router)
 app.include_router(auth_router)
@@ -56,7 +59,7 @@ def home():
 # Run
 if __name__ == "__main__":
     uvicorn.run(
-    "main:app",
-    host="0.0.0.0",
-    port=int(os.environ.get("PORT", 8000))
-)
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000))
+    )
