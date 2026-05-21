@@ -10,7 +10,7 @@ from PIL import Image
 import io
 import cv2
 import numpy as np
-
+from PIL import ImageStat
 from models.storage import (
     get_vendor_rules,
     save_vendor_rules
@@ -18,7 +18,53 @@ from models.storage import (
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# =========================================
+# IMAGE QUALITY CHECK
+# =========================================
+def detect_blur_and_quality(file_bytes):
 
+    try:
+
+        image = Image.open(
+            io.BytesIO(file_bytes)
+        ).convert("L")
+
+        img_np = np.array(image)
+
+        # =================================
+        # BLUR DETECTION
+        # =================================
+        blur_score = cv2.Laplacian(
+            img_np,
+            cv2.CV_64F
+        ).var()
+
+        # =================================
+        # BRIGHTNESS CHECK
+        # =================================
+        brightness = ImageStat.Stat(image).mean[0]
+
+        is_blurry = blur_score < 80
+
+        is_dark = brightness < 40
+
+        return {
+            "blur_score": round(blur_score, 2),
+            "brightness": round(brightness, 2),
+            "is_blurry": is_blurry,
+            "is_dark": is_dark
+        }
+
+    except Exception as e:
+
+        print("QUALITY CHECK ERROR:", e)
+
+        return {
+            "blur_score": 0,
+            "brightness": 0,
+            "is_blurry": True,
+            "is_dark": False
+        }
 # =========================================
 # LIGHT OCR FALLBACK ONLY
 # =========================================
@@ -335,6 +381,9 @@ async def analyze_receipt_image(file_bytes: bytes):
         raw_text = extract_text_from_image(
             file_bytes
         )
+        quality_data = detect_blur_and_quality(
+    file_bytes
+)
 
         print("\n========== OCR TEXT ==========")
         print(raw_text)
@@ -542,6 +591,45 @@ JSON FORMAT:
         }
         confidence = calculate_confidence(result)
 
+        # =================================
+        # QUALITY PENALTY
+        # =================================
+        if quality_data["is_blurry"]:
+
+            confidence = "low"
+
+        elif (
+            quality_data["is_dark"]
+            and confidence == "high"
+        ):
+
+            confidence = "medium"
+
+        result["ai_confidence"] = confidence
+
+        # =================================
+        # NEEDS REVIEW LOGIC
+        # =================================
+        result["needs_review"] = (
+            confidence != "high"
+        )
+
+        result["is_blurry"] = (
+            quality_data["is_blurry"]
+        )
+
+        result["blur_score"] = (
+            quality_data["blur_score"]
+        )
+
+        result["is_dark"] = (
+            quality_data["is_dark"]
+        )
+
+        print("\n========== FINAL RESULT ==========")
+        print(result)
+
+        return result
         result["ai_confidence"] = confidence
 
         # =================================

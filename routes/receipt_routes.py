@@ -66,6 +66,11 @@ async def upload_receipt(file: UploadFile = File(...)):
         "ai_extracted": True,
         "ai_confidence": analyzed_data.get("ai_confidence", "low"),
         "needs_review": analyzed_data.get("needs_review", False),
+        "is_blurry": analyzed_data.get("is_blurry", False),
+
+"blur_score": analyzed_data.get("blur_score", 0),
+
+"is_dark": analyzed_data.get("is_dark", False),
         "manually_edited": False,
 
         "irs_category": irs_data["irs_category"],
