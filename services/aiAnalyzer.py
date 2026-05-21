@@ -11,12 +11,14 @@ import io
 import cv2
 import numpy as np
 from PIL import ImageStat
+
 from models.storage import (
     get_vendor_rules,
     save_vendor_rules
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # =========================================
 # IMAGE QUALITY CHECK
@@ -49,10 +51,10 @@ def detect_blur_and_quality(file_bytes):
         is_dark = brightness < 40
 
         return {
-            "blur_score": round(blur_score, 2),
-            "brightness": round(brightness, 2),
-            "is_blurry": is_blurry,
-            "is_dark": is_dark
+            "blur_score": float(round(blur_score, 2)),
+            "brightness": float(round(brightness, 2)),
+            "is_blurry": bool(is_blurry),
+            "is_dark": bool(is_dark)
         }
 
     except Exception as e:
@@ -60,11 +62,13 @@ def detect_blur_and_quality(file_bytes):
         print("QUALITY CHECK ERROR:", e)
 
         return {
-            "blur_score": 0,
-            "brightness": 0,
+            "blur_score": 0.0,
+            "brightness": 0.0,
             "is_blurry": True,
             "is_dark": False
         }
+
+
 # =========================================
 # LIGHT OCR FALLBACK ONLY
 # =========================================
@@ -381,9 +385,10 @@ async def analyze_receipt_image(file_bytes: bytes):
         raw_text = extract_text_from_image(
             file_bytes
         )
+
         quality_data = detect_blur_and_quality(
-    file_bytes
-)
+            file_bytes
+        )
 
         print("\n========== OCR TEXT ==========")
         print(raw_text)
@@ -589,6 +594,7 @@ JSON FORMAT:
             "vendor_learned":
                 learned_vendor
         }
+
         confidence = calculate_confidence(result)
 
         # =================================
@@ -614,30 +620,18 @@ JSON FORMAT:
             confidence != "high"
         )
 
-        result["is_blurry"] = (
+        result["is_blurry"] = bool(
             quality_data["is_blurry"]
         )
 
-        result["blur_score"] = (
+        result["blur_score"] = float(
             quality_data["blur_score"]
         )
 
-        result["is_dark"] = (
+        result["is_dark"] = bool(
             quality_data["is_dark"]
         )
 
-        print("\n========== FINAL RESULT ==========")
-        print(result)
-
-        return result
-        result["ai_confidence"] = confidence
-
-        # =================================
-        # NEEDS REVIEW LOGIC
-        # =================================
-        result["needs_review"] = (
-            confidence != "high"
-        )
         print("\n========== FINAL RESULT ==========")
         print(result)
 
@@ -666,5 +660,13 @@ JSON FORMAT:
 
             "vendor_learned": False,
 
-            "ai_confidence": "low"
+            "ai_confidence": "low",
+
+            "needs_review": True,
+
+            "is_blurry": False,
+
+            "blur_score": 0.0,
+
+            "is_dark": False
         }
