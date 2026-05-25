@@ -321,17 +321,24 @@ def learn_vendor(vendor, category, deduction_type):
 
         existing["category"] = category
         existing["deduction_type"] = deduction_type
-        existing["times_used"] += 1
+        existing["times_used"] = (
+    existing.get("times_used", 0) + 1
+)
 
     else:
 
         vendors.append({
-            "vendor": vendor,
-            "category": category,
-            "deduction_type": deduction_type,
-            "times_used": 1
-        })
 
+    "vendor": vendor,
+
+    "category": category,
+
+    "deduction_type": deduction_type,
+
+    "times_used": 1,
+
+    "manually_corrected": False
+})
     save_vendor_rules(vendors)
 
 

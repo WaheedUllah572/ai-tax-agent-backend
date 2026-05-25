@@ -72,3 +72,56 @@ def get_vendor_rules():
 
 def save_vendor_rules(data):
     save_data(VENDOR_FILE, data)
+
+
+# =====================================
+# ✅ NEW: LEARN FROM USER CORRECTIONS
+# =====================================
+def save_vendor_correction(
+    vendor,
+    category,
+    deduction_type
+):
+
+    if not vendor:
+        return
+
+    vendor = vendor.lower().strip()
+
+    vendors = get_vendor_rules()
+
+    existing = None
+
+    for v in vendors:
+
+        if v["vendor"] == vendor:
+            existing = v
+            break
+
+    if existing:
+
+        existing["category"] = category
+        existing["deduction_type"] = deduction_type
+
+        existing["times_used"] = (
+            existing.get("times_used", 0) + 1
+        )
+
+        existing["manually_corrected"] = True
+
+    else:
+
+        vendors.append({
+
+            "vendor": vendor,
+
+            "category": category,
+
+            "deduction_type": deduction_type,
+
+            "times_used": 1,
+
+            "manually_corrected": True
+        })
+
+    save_vendor_rules(vendors)
