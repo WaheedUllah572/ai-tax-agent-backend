@@ -239,12 +239,20 @@ def normalize_date(date_str):
     formats = [
 
         "%Y-%m-%d",
+
         "%d %B %Y",
+
         "%d %b %Y",
+
         "%d/%m/%Y",
+
         "%d-%m-%Y",
+
         "%B %d %Y",
-        "%b %d %Y"
+
+        "%b %d %Y",
+
+        "%a, %b %d, %Y"
     ]
 
     for fmt in formats:
