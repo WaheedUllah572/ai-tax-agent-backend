@@ -200,88 +200,6 @@ async def get_all_receipts():
 # =====================================
 # ✅ NEW: UPDATE + LEARNING
 # =====================================
-@router.put("/update/{receipt_id}")
-async def update_receipt(
-
-    receipt_id: str,
-
-    updated_data: dict = Body(...)
-):
-
-    receipts = get_receipts()
-
-    for r in receipts:
-
-        if r["id"] == receipt_id:
-
-            # =========================
-            # UPDATE VALUES
-            # =========================
-            r["vendor"] = (
-                updated_data.get(
-                    "vendor",
-                    r["vendor"]
-                )
-                .lower()
-                .strip()
-            )
-
-            r["amount"] = (
-                updated_data.get(
-                    "amount",
-                    r["amount"]
-                )
-            )
-
-            r["category"] = (
-                updated_data.get(
-                    "category",
-                    r["category"]
-                )
-            )
-
-            r["date"] = (
-                updated_data.get(
-                    "date",
-                    r["date"]
-                )
-            )
-
-            # =========================
-            # LEARNING SYSTEM
-            # =========================
-            save_vendor_correction(
-
-                r["vendor"],
-
-                r["category"],
-
-                r.get(
-                    "deduction_type",
-                    r["category"]
-                )
-            )
-
-            r["vendor_learned"] = True
-
-            r["manually_edited"] = True
-
-            r["status"] = "Reviewed"
-
-            r["audit_log"].append({
-
-                "action": "manually_updated",
-
-                "by": "user",
-
-                "date":
-                    datetime.utcnow()
-                    .isoformat()
-            })
-
-    save_receipts(receipts)
-
-    return {"success": True}
 
 
 @router.put("/update/{receipt_id}")
@@ -318,11 +236,14 @@ async def update_receipt(
             )
 
             r["category"] = (
-                updated_data.get(
-                    "category",
-                    r["category"]
-                )
-            )
+            updated_data.get(
+             "category",
+           r["category"]
+        )
+     )
+
+# Keep deduction synced with category
+            r["deduction_type"] = r["category"]
 
             r["date"] = (
                 updated_data.get(
@@ -336,15 +257,12 @@ async def update_receipt(
             # =========================
             save_vendor_correction(
 
-                r["vendor"],
+    r["vendor"],
 
-                r["category"],
+    r["category"],
 
-                r.get(
-                    "deduction_type",
-                    r["category"]
-                )
-            )
+    r["category"]
+)
 
             # =========================
             # REVIEW WORKFLOW
@@ -376,6 +294,7 @@ async def update_receipt(
     save_receipts(receipts)
 
     return {"success": True}
+@router.put("/approve/{receipt_id}")
 async def approve_receipt(
     receipt_id: str
 ):
