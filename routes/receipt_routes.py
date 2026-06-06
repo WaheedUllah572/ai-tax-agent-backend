@@ -165,7 +165,11 @@ async def upload_receipt(file: UploadFile = File(...)):
 
         "xero_synced": False,
 
-        "audit_log": [
+"possible_duplicate": False,
+
+"duplicate_of": None,
+
+"audit_log": [
 
             {
                 "action": "created",
@@ -181,6 +185,54 @@ async def upload_receipt(file: UploadFile = File(...)):
 
     receipts = get_receipts()
 
+    # =====================================
+    # DUPLICATE DETECTION
+    # =====================================
+    possible_duplicate = None
+
+    for existing in receipts:
+
+        if (
+
+            str(existing.get("vendor", "")).lower().strip()
+            ==
+            str(receipt_record.get("vendor", "")).lower().strip()
+
+            and
+
+            float(existing.get("amount", 0))
+            ==
+            float(receipt_record.get("amount", 0))
+
+            and
+
+            str(existing.get("date", "")).strip()
+            ==
+            str(receipt_record.get("date", "")).strip()
+
+        ):
+
+            possible_duplicate = existing["id"]
+            break
+
+    if possible_duplicate:
+
+        receipt_record["possible_duplicate"] = True
+
+        receipt_record["duplicate_of"] = (
+            possible_duplicate
+        )
+
+        receipt_record["status"] = "Needs Review"
+
+        receipt_record["needs_review"] = True
+
+    else:
+
+        receipt_record["possible_duplicate"] = False
+
+        receipt_record["duplicate_of"] = None
+
     receipts.append(receipt_record)
 
     save_receipts(receipts)
@@ -189,7 +241,6 @@ async def upload_receipt(file: UploadFile = File(...)):
         "success": True,
         "receipt": receipt_record
     }
-
 
 @router.get("/all")
 async def get_all_receipts():
@@ -294,6 +345,8 @@ async def update_receipt(
     save_receipts(receipts)
 
     return {"success": True}
+
+
 @router.put("/approve/{receipt_id}")
 async def approve_receipt(
     receipt_id: str
