@@ -427,6 +427,10 @@ async def mark_duplicate(
 
             r["status"] = "Duplicate"
 
+            r["possible_duplicate"] = False
+
+            r["needs_review"] = False
+
             r["audit_log"].append({
 
                 "action": "marked_duplicate",
