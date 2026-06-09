@@ -381,6 +381,66 @@ async def approve_receipt(
 
     return {"success": True}
 
+@router.put("/approve-duplicate/{receipt_id}")
+async def approve_duplicate(
+    receipt_id: str
+):
+
+    receipts = get_receipts()
+
+    for r in receipts:
+
+        if r["id"] == receipt_id:
+
+            r["status"] = "Approved"
+
+            r["possible_duplicate"] = False
+
+            r["needs_review"] = False
+
+            r["audit_log"].append({
+
+                "action": "duplicate_approved",
+
+                "by": "user",
+
+                "date":
+                    datetime.utcnow()
+                    .isoformat()
+            })
+
+    save_receipts(receipts)
+
+    return {"success": True}
+
+
+@router.put("/mark-duplicate/{receipt_id}")
+async def mark_duplicate(
+    receipt_id: str
+):
+
+    receipts = get_receipts()
+
+    for r in receipts:
+
+        if r["id"] == receipt_id:
+
+            r["status"] = "Duplicate"
+
+            r["audit_log"].append({
+
+                "action": "marked_duplicate",
+
+                "by": "user",
+
+                "date":
+                    datetime.utcnow()
+                    .isoformat()
+            })
+
+    save_receipts(receipts)
+
+    return {"success": True}
 
 @router.delete("/{receipt_id}")
 async def delete_receipt(
