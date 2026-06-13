@@ -164,6 +164,7 @@ async def upload_receipt(file: UploadFile = File(...)):
             irs_data["rule_applied"],
 
         "xero_synced": False,
+        "locked": False,
 
 "possible_duplicate": False,
 
@@ -267,9 +268,14 @@ async def update_receipt(
 
         if r["id"] == receipt_id:
 
-            # =========================
-            # UPDATE VALUES
-            # =========================
+            if r.get("locked", False):
+
+                return {
+                    "success": False,
+                    "message":
+                    "Receipt is locked and cannot be edited."
+                }
+
             r["vendor"] = (
                 updated_data.get(
                     "vendor",
@@ -287,13 +293,13 @@ async def update_receipt(
             )
 
             r["category"] = (
-            updated_data.get(
-             "category",
-           r["category"]
-        )
-     )
+                updated_data.get(
+                    "category",
+                    r["category"]
+                )
+            )
 
-# Keep deduction synced with category
+            # Keep deduction synced with category
             r["deduction_type"] = r["category"]
 
             r["date"] = (
@@ -303,21 +309,15 @@ async def update_receipt(
                 )
             )
 
-            # =========================
-            # LEARNING SYSTEM
-            # =========================
             save_vendor_correction(
 
-    r["vendor"],
+                r["vendor"],
 
-    r["category"],
+                r["category"],
 
-    r["category"]
-)
+                r["category"]
+            )
 
-            # =========================
-            # REVIEW WORKFLOW
-            # =========================
             r["vendor_learned"] = True
 
             r["manually_edited"] = True
@@ -328,9 +328,6 @@ async def update_receipt(
 
             r["status"] = "Reviewed"
 
-            # =========================
-            # AUDIT TRAIL
-            # =========================
             r["audit_log"].append({
 
                 "action": "manually_updated",
@@ -358,7 +355,8 @@ async def approve_receipt(
 
         if r["id"] == receipt_id:
 
-            r["status"] = "Approved"
+            r["status"] = "Locked"
+            r["locked"] = True
 
             success = xero_create_bill(r)
 
@@ -392,7 +390,9 @@ async def approve_duplicate(
 
         if r["id"] == receipt_id:
 
-            r["status"] = "Approved"
+            r["status"] = "Locked"
+
+            r["locked"] = True
 
             r["possible_duplicate"] = False
 
