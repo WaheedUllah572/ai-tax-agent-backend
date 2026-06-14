@@ -26,27 +26,39 @@ def apply_tax_rules(
     deductible_percent = 100
     rule_applied = "general_expense_rule"
 
-    # IRS RULES
+    # MEALS / RESTAURANTS
     if "meal" in category or "restaurant" in category or "food" in category:
 
-     if jurisdiction == "US":
-        deductible_percent = 50
+        if jurisdiction == "US":
+            deductible_percent = 50
 
-    elif jurisdiction == "UK":
-        deductible_percent = 100
+        elif jurisdiction == "UK":
+            deductible_percent = 100
 
-    elif jurisdiction == "AU":
-        deductible_percent = 100
+        elif jurisdiction == "AU":
+            deductible_percent = 100
 
-    elif jurisdiction == "CA":
-        deductible_percent = 50
+        elif jurisdiction == "CA":
+            deductible_percent = 50
 
-    elif "uber" in category or "lyft" in category or "transport" in category or "vehicle" in category:
+        irs_category = f"{jurisdiction} - Meals"
+        rule_applied = f"{jurisdiction}_meals_rule"
+
+    elif (
+        "uber" in category
+        or "lyft" in category
+        or "transport" in category
+        or "vehicle" in category
+    ):
         irs_category = "Schedule C - Car and Truck Expenses"
         deductible_percent = 100
         rule_applied = "vehicle_expense_rule"
 
-    elif "software" in category or "subscription" in category or "saas" in category:
+    elif (
+        "software" in category
+        or "subscription" in category
+        or "saas" in category
+    ):
         irs_category = "Schedule C - Office Expenses"
         deductible_percent = 100
         rule_applied = "software_rule"
@@ -56,26 +68,37 @@ def apply_tax_rules(
         deductible_percent = 100
         rule_applied = "office_expense_rule"
 
-    # ✅ NEW UTILITY RULE ADDED HERE
-    elif "utility" in category or "internet" in category or "phone" in category or "electric" in category:
+    elif (
+        "utility" in category
+        or "internet" in category
+        or "phone" in category
+        or "electric" in category
+    ):
         irs_category = "Schedule C - Utilities"
         deductible_percent = 100
         rule_applied = "utilities_rule"
 
-    elif "travel" in category or "hotel" in category or "flight" in category:
+    elif (
+        "travel" in category
+        or "hotel" in category
+        or "flight" in category
+    ):
         irs_category = "Schedule C - Travel"
         deductible_percent = 100
         rule_applied = "travel_rule"
 
     elif "transfer" in category:
-        # Internal transfers are NOT deductible
         irs_category = "Non-Deductible"
         deductible_percent = 0
         rule_applied = "internal_transfer_rule"
 
-    deductible_amount = round(amount * (deductible_percent / 100), 2)
+    deductible_amount = round(
+        amount * (deductible_percent / 100),
+        2
+    )
 
     return {
+        "jurisdiction": jurisdiction,
         "irs_category": irs_category,
         "deductible_percent": deductible_percent,
         "deductible_amount": deductible_amount,
