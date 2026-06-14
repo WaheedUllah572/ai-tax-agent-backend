@@ -9,6 +9,7 @@ TRANSACTION_FILE = os.path.join(BASE_DIR, "transactions.json")
 
 # ✅ NEW
 VENDOR_FILE = os.path.join(BASE_DIR, "vendors.json")
+SETTINGS_FILE = os.path.join(BASE_DIR, "settings.json")
 
 
 def load_data(file_path):
@@ -125,3 +126,27 @@ def save_vendor_correction(
         })
 
     save_vendor_rules(vendors)
+
+
+# =====================================
+# SETTINGS
+# =====================================
+
+def get_settings():
+
+    data = load_data(SETTINGS_FILE)
+
+    if not data:
+        return {
+            "jurisdiction": "US"
+        }
+
+    return data
+
+
+def save_settings(data):
+
+    save_data(
+        SETTINGS_FILE,
+        data
+    )

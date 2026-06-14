@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
+from routes.settings_routes import router as settings_router
 import uvicorn
 import os
 
@@ -98,7 +98,7 @@ app.include_router(receipt_router)
 app.include_router(report_router)
 
 app.include_router(transaction_router)
-
+app.include_router(settings_router)
 # =====================================
 # ROOT
 # =====================================
