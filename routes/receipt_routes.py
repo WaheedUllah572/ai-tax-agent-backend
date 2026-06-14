@@ -168,7 +168,10 @@ async def upload_receipt(file: UploadFile = File(...)):
             ],
 
         "rule_applied":
-            irs_data["rule_applied"],
+    irs_data["rule_applied"],
+
+"jurisdiction":
+    irs_data["jurisdiction"],
 
         "xero_synced": False,
         "locked": False,
