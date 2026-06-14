@@ -8,8 +8,12 @@ import uuid
 from datetime import datetime
 
 from gmail_utils import save_tokens, load_tokens, scan_receipts_by_year
-from models.storage import get_receipts, save_receipts
-from services.irs_rules import apply_irs_rules
+from models.storage import (
+    get_receipts,
+    save_receipts,
+    get_settings
+)
+from services.irs_rules import apply_tax_rules
 
 load_dotenv()
 
@@ -102,13 +106,20 @@ async def gmail_scan():
 
             data = r.get("analysis", {})
 
-            # APPLY IRS RULES
-            irs_data = apply_irs_rules(
+            # APPLY TAX RULES
+
+            settings = get_settings()
+
+            irs_data = apply_tax_rules(
                 data.get("category"),
-                data.get("amount")
+                data.get("amount"),
+                settings.get(
+                    "jurisdiction",
+                    "US"
+                )
             )
 
-            receipt_record = {
+            receipt_record = { 
                 "id": str(uuid.uuid4()),
                 "message_id": message_id,
                 "filename": r.get("filename", "email_receipt"),
