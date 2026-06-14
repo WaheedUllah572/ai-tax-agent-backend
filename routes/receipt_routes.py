@@ -5,9 +5,10 @@ import os
 import shutil
 
 from services.aiAnalyzer import analyze_receipt_image
-from services.irs_rules import apply_irs_rules
+from services.irs_rules import apply_tax_rules
 
 from models.storage import (
+    get_settings,
     get_receipts,
     save_receipts,
     save_vendor_correction
@@ -52,10 +53,16 @@ async def upload_receipt(file: UploadFile = File(...)):
         analyzed_data.get("currency")
     )
 
-    irs_data = apply_irs_rules(
-        analyzed_data.get("category"),
-        converted_amount
+    settings = get_settings()
+
+    irs_data = apply_tax_rules(
+    analyzed_data.get("category"),
+    converted_amount,
+    settings.get(
+        "jurisdiction",
+        "US"
     )
+)
 
     receipt_record = {
 

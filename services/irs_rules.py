@@ -12,7 +12,11 @@ def clean_amount(amount):
         return 0.0
 
 
-def apply_irs_rules(category: str, amount):
+def apply_tax_rules(
+    category,
+    amount,
+    jurisdiction="US"
+):
     amount = clean_amount(amount)
 
     category = (category or "").lower()
@@ -24,9 +28,18 @@ def apply_irs_rules(category: str, amount):
 
     # IRS RULES
     if "meal" in category or "restaurant" in category or "food" in category:
-        irs_category = "Schedule C - Meals"
+
+     if jurisdiction == "US":
         deductible_percent = 50
-        rule_applied = "meals_50_percent_rule"
+
+    elif jurisdiction == "UK":
+        deductible_percent = 100
+
+    elif jurisdiction == "AU":
+        deductible_percent = 100
+
+    elif jurisdiction == "CA":
+        deductible_percent = 50
 
     elif "uber" in category or "lyft" in category or "transport" in category or "vehicle" in category:
         irs_category = "Schedule C - Car and Truck Expenses"
