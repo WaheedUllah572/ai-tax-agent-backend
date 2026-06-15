@@ -63,6 +63,7 @@ async def upload_receipt(file: UploadFile = File(...)):
         "US"
     )
 )
+    print("DEBUG IRS DATA:", irs_data)
 
     receipt_record = {
 
