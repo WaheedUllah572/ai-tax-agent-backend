@@ -245,6 +245,7 @@ async def upload_receipt(file: UploadFile = File(...)):
 
         receipt_record["duplicate_of"] = None
 
+    print("DEBUG RECEIPT:", receipt_record)
     receipts.append(receipt_record)
 
     save_receipts(receipts)
