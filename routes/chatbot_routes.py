@@ -210,7 +210,12 @@ def generate_reply(
                 {
     "role": "system",
     "content":
-        HELP_KNOWLEDGE
+        (
+            "You are Max, TaxMate's app help assistant. "
+            "Only answer questions about how to use TaxMate features. "
+            "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
+            + HELP_KNOWLEDGE
+        )
         if mode == "help"
         else
         "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."
