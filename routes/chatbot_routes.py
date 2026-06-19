@@ -5,7 +5,7 @@ from enum import Enum
 import re
 import os
 from openai import OpenAI
-
+from services.help_knowledge import HELP_KNOWLEDGE
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
 
 router = APIRouter(tags=["Chatbot"])
@@ -22,6 +22,7 @@ class Stage(str, Enum):
 
 class ChatRequest(BaseModel):
     message: str
+    mode: Optional[str] = "tax"
     session_id: Optional[str] = "default"
 
 
@@ -116,7 +117,12 @@ def extract_trip_entities(msg: str) -> Dict:
 # =====================================================
 # MAIN ENGINE
 # =====================================================
-def generate_reply(message: str, session: Dict, session_id: str) -> str:
+def generate_reply(
+    message: str,
+    session: Dict,
+    session_id: str,
+    mode: str = "tax"
+) -> str:
     msg = message.strip()
     intent = detect_intent(msg)
 
@@ -201,7 +207,14 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."},
+                {
+    "role": "system",
+    "content":
+        HELP_KNOWLEDGE
+        if mode == "help"
+        else
+        "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."
+},
                 {"role": "user", "content": msg}
             ],
             max_tokens=300
@@ -220,7 +233,12 @@ def generate_reply(message: str, session: Dict, session_id: str) -> str:
 @router.post("/chat")
 async def chat(data: ChatRequest):
     session = get_session(data.session_id)
-    reply = generate_reply(data.message, session, data.session_id)
+    reply = generate_reply(
+    data.message,
+    session,
+    data.session_id,
+    data.mode
+)
     return {
         "reply": reply,
         "context": session
