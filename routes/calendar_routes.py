@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from gmail_utils import save_tokens, load_tokens
+from datetime import datetime, timezone
 import os
 import requests
 
@@ -89,10 +90,13 @@ async def get_calendar_events():
         "https://www.googleapis.com/calendar/v3/calendars/primary/events",
         headers=headers,
         params={
-            "maxResults": 5,
-            "singleEvents": True,
-            "orderBy": "startTime"
-        }
+    "maxResults": 5,
+    "singleEvents": True,
+    "orderBy": "startTime",
+    "timeMin": datetime.now(
+        timezone.utc
+    ).isoformat()
+}
     )
 
     events = response.json()
