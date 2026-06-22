@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
-from gmail_utils import save_tokens
+from gmail_utils import save_tokens, load_tokens
 import os
 import requests
 
@@ -67,3 +67,37 @@ async def calendar_callback(request: Request):
     "calendar_connected": True,
     "message": "Calendar connected successfully"
 }
+
+@router.get("/events")
+async def get_calendar_events():
+
+    tokens = load_tokens()
+
+    if not tokens:
+        return {
+            "success": False,
+            "message": "Calendar not connected"
+        }
+
+    access_token = tokens.get("access_token")
+
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        headers=headers,
+        params={
+            "maxResults": 5,
+            "singleEvents": True,
+            "orderBy": "startTime"
+        }
+    )
+
+    events = response.json()
+
+    return {
+        "success": True,
+        "events": events.get("items", [])
+    }
