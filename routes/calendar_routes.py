@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
+from gmail_utils import save_tokens
 import os
 import requests
 
@@ -59,8 +60,10 @@ async def calendar_callback(request: Request):
         data=data
     ).json()
 
+    save_tokens(tokens)
+
     return {
-        "success": True,
-        "calendar_connected": True,
-        "tokens": tokens
-    }
+    "success": True,
+    "calendar_connected": True,
+    "message": "Calendar connected successfully"
+}
