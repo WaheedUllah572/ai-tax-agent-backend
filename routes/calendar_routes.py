@@ -91,15 +91,36 @@ async def get_calendar_events():
         params={
             "maxResults": 10,
             "singleEvents": True,
-            "orderBy": "startTime"
+            "orderBy": "startTime",
+            "timeMin": datetime.utcnow().isoformat() + "Z",
+            "showDeleted": False
         }
     )
 
-    events = response.json()
+    events = response.json().get("items", [])
 
-    print("GOOGLE EVENTS:", events)
+    filtered_events = []
+
+    for event in events:
+
+        # Skip birthdays
+        if event.get("eventType") == "birthday":
+            continue
+
+        start = event.get("start", {})
+
+        # Skip all-day or broken events
+        if "dateTime" not in start:
+            continue
+
+        filtered_events.append({
+            "summary": event.get("summary"),
+            "start": start.get("dateTime")
+        })
+
+    print("FILTERED EVENTS:", filtered_events)
 
     return {
         "success": True,
-        "events": events.get("items", [])
+        "events": filtered_events
     }
