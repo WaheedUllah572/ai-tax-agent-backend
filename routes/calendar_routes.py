@@ -1,6 +1,7 @@
-from fastapi import APIRouter
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Request
+from fastapi.responses import RedirectResponse, JSONResponse
 import os
+import requests
 
 router = APIRouter(
     prefix="/calendar",
@@ -8,6 +9,7 @@ router = APIRouter(
 )
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 GOOGLE_CALENDAR_REDIRECT_URI = os.getenv(
     "GOOGLE_CALENDAR_REDIRECT_URI"
 )
@@ -29,3 +31,36 @@ async def connect_calendar():
     )
 
     return RedirectResponse(url)
+
+
+@router.get("/callback")
+async def calendar_callback(request: Request):
+
+    code = request.query_params.get("code")
+
+    if not code:
+        return JSONResponse(
+            {"error": "Missing code"},
+            status_code=400
+        )
+
+    token_url = "https://oauth2.googleapis.com/token"
+
+    data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_CALENDAR_REDIRECT_URI,
+        "grant_type": "authorization_code"
+    }
+
+    tokens = requests.post(
+        token_url,
+        data=data
+    ).json()
+
+    return {
+        "success": True,
+        "calendar_connected": True,
+        "tokens": tokens
+    }
