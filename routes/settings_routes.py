@@ -25,9 +25,14 @@ async def update_settings(
     settings = get_settings()
 
     settings["jurisdiction"] = data.get(
-        "jurisdiction",
-        "US"
-    )
+    "jurisdiction",
+    "US"
+)
+
+    settings["calendar_connected"] = data.get(
+    "calendar_connected",
+    settings.get("calendar_connected", False)
+)
 
     save_settings(settings)
 

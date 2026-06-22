@@ -29,7 +29,7 @@ from routes.chatbot_routes import router as chatbot_router
 from routes.receipt_routes import router as receipt_router
 from routes.report_routes import router as report_router
 from routes.transaction_routes import router as transaction_router
-
+from routes.calendar_routes import router as calendar_router
 # =====================================
 # FASTAPI APP
 # =====================================
@@ -99,6 +99,7 @@ app.include_router(report_router)
 
 app.include_router(transaction_router)
 app.include_router(settings_router)
+app.include_router(calendar_router)
 # =====================================
 # ROOT
 # =====================================
