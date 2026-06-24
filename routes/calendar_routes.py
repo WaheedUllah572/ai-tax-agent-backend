@@ -115,9 +115,10 @@ async def get_calendar_events():
             continue
 
         filtered_events.append({
-            "summary": event.get("summary"),
-            "start": start.get("dateTime")
-        })
+    "summary": event.get("summary"),
+    "start": start.get("dateTime"),
+    "timezone": start.get("timeZone")
+})
 
     return {
         "success": True,
