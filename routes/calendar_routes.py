@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from gmail_utils import save_tokens, load_tokens
 from datetime import datetime, timezone
+from pydantic import BaseModel
 import os
 import requests
 
@@ -20,7 +21,7 @@ GOOGLE_CALENDAR_REDIRECT_URI = os.getenv(
 @router.get("/connect")
 async def connect_calendar():
 
-    scope = "https://www.googleapis.com/auth/calendar.readonly"
+    scope = "https://www.googleapis.com/auth/calendar"
 
     url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
@@ -123,4 +124,49 @@ async def get_calendar_events():
     return {
         "success": True,
         "events": filtered_events
+    }
+
+class CreateEventRequest(BaseModel):
+    title: str
+    start: str
+    end: str
+
+
+@router.post("/create-event")
+async def create_event(data: CreateEventRequest):
+
+    tokens = load_tokens()
+
+    if not tokens:
+        return {
+            "success": False,
+            "message": "Calendar not connected"
+        }
+
+    access_token = tokens.get("access_token")
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    event_body = {
+        "summary": data.title,
+        "start": {
+            "dateTime": data.start
+        },
+        "end": {
+            "dateTime": data.end
+        }
+    }
+
+    response = requests.post(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        headers=headers,
+        json=event_body
+    )
+
+    return {
+        "success": True,
+        "event": response.json()
     }

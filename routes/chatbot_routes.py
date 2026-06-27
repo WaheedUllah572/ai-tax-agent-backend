@@ -4,6 +4,8 @@ from typing import Dict, Optional
 from enum import Enum
 import re
 import os
+from datetime import datetime, timedelta
+import requests
 from openai import OpenAI
 from services.help_knowledge import HELP_KNOWLEDGE
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
@@ -65,11 +67,21 @@ def detect_intent(msg: str) -> Optional[str]:
         "end trip",
     ]
 
+    schedule_keywords = [
+    "schedule",
+    "book meeting",
+    "create meeting",
+    "set appointment"
+]
+
     if any(k in msg for k in start_keywords):
         return "start_mileage"
 
     if any(k in msg for k in stop_keywords):
         return "stop_mileage"
+    
+    if any(k in msg for k in schedule_keywords):
+     return "schedule_meeting"
 
     return None
 
@@ -111,6 +123,31 @@ def extract_trip_entities(msg: str) -> Dict:
         "client_name": client_name,
         "purpose": purpose,
         "notes": None
+    }
+
+def extract_schedule_details(msg: str):
+
+    title = "New Meeting"
+
+    if "with" in msg:
+        person = msg.split("with")[-1].strip()
+        title = f"Meeting with {person}"
+
+    start = datetime.utcnow() + timedelta(days=1)
+
+    start = start.replace(
+        hour=17,
+        minute=0,
+        second=0,
+        microsecond=0
+    )
+
+    end = start + timedelta(hours=1)
+
+    return {
+        "title": title,
+        "start": start.isoformat(),
+        "end": end.isoformat()
     }
 
 
@@ -199,27 +236,48 @@ def generate_reply(
             f"Duration: {result['duration_minutes']} minutes\n\n"
             "📁 Saved to mileage log."
         )
-
+    
     # =================================================
-    # 🤖 AI RESPONSE (FINAL FIX)
+    # 📅 SCHEDULE MEETING
+    # =================================================
+    if intent == "schedule_meeting":
+
+        details = extract_schedule_details(msg)
+
+        response = requests.post(
+            "https://ai-tax-agent-backend-1.onrender.com/calendar/create-event",
+            json=details
+        ).json()
+
+        if response.get("success"):
+            return (
+                f"✅ Scheduled: {details['title']}\n"
+                f"Start: {details['start']}"
+            )
+
+        return "⚠️ Could not create meeting."
+    
+
+        # =================================================
+    # 🤖 AI RESPONSE
     # =================================================
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
-    "role": "system",
-    "content":
-        (
-            "You are Max, TaxMate's app help assistant. "
-            "Only answer questions about how to use TaxMate features. "
-            "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
-            + HELP_KNOWLEDGE
-        )
-        if mode == "help"
-        else
-        "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."
-},
+                    "role": "system",
+                    "content":
+                        (
+                            "You are Max, TaxMate's app help assistant. "
+                            "Only answer questions about how to use TaxMate features. "
+                            "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
+                            + HELP_KNOWLEDGE
+                        )
+                        if mode == "help"
+                        else
+                        "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."
+                },
                 {"role": "user", "content": msg}
             ],
             max_tokens=300
