@@ -237,17 +237,28 @@ def generate_reply(
             "📁 Saved to mileage log."
         )
     
-    # =================================================
+        # =================================================
     # 📅 SCHEDULE MEETING
     # =================================================
     if intent == "schedule_meeting":
 
         details = extract_schedule_details(msg)
 
-        response = requests.post(
+        res = requests.post(
             "https://ai-tax-agent-backend-1.onrender.com/calendar/create-event",
             json=details
-        ).json()
+        )
+
+        print("STATUS:", res.status_code)
+        print("RAW RESPONSE:", res.text)
+
+        if res.status_code != 200:
+            return "⚠️ Calendar API failed."
+
+        try:
+            response = res.json()
+        except:
+            return "⚠️ Invalid calendar response."
 
         if response.get("success"):
             return (
