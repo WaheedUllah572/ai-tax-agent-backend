@@ -262,7 +262,7 @@ def generate_reply(
 
     except Exception as e:
         print("AI ERROR:", e)
-        return "Sorry, I couldn’t process that."     
+        return "Sorry, I couldn’t process that."  
     # =================================================
     # 🤖 AI RESPONSE
     # =================================================
