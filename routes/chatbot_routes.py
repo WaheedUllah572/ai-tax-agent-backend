@@ -9,7 +9,7 @@ import requests
 from openai import OpenAI
 from services.help_knowledge import HELP_KNOWLEDGE
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
-
+from routes.calendar_routes import create_calendar_event_direct
 router = APIRouter(tags=["Chatbot"])
 
 # ✅ OpenAI Client
@@ -160,15 +160,13 @@ def generate_reply(
     session_id: str,
     mode: str = "tax"
 ) -> str:
+
     msg = message.strip()
     intent = detect_intent(msg)
 
-    # =================================================
-    # 🚗 START TRIP
-    # =================================================
+    # START MILEAGE
     if intent == "start_mileage" and not session.get("awaiting_trip_edit"):
         entities = extract_trip_entities(msg)
-
         session["pending_trip_confirmation"] = entities
 
         return (
@@ -176,13 +174,10 @@ def generate_reply(
             f"Destination: {entities.get('destination') or 'Not specified'}\n"
             f"Client: {entities.get('client_name') or 'Not specified'}\n"
             f"Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-            "Please confirm:\n"
             "Type CONFIRM to start or EDIT to modify."
         )
 
-    # =================================================
-    # ✏️ EDIT
-    # =================================================
+    # EDIT
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
         session["pending_trip_confirmation"] = None
         session["awaiting_trip_edit"] = True
@@ -198,13 +193,10 @@ def generate_reply(
             f"Destination: {entities.get('destination') or 'Not specified'}\n"
             f"Client: {entities.get('client_name') or 'Not specified'}\n"
             f"Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-            "Please confirm:\n"
             "Type CONFIRM to start or EDIT to modify."
         )
 
-    # =================================================
-    # ✅ CONFIRM
-    # =================================================
+    # CONFIRM
     if msg.lower() == "confirm" and session.get("pending_trip_confirmation"):
         entities = session["pending_trip_confirmation"]
 
@@ -217,9 +209,7 @@ def generate_reply(
 
         return "✅ Trip confirmed and tracking started."
 
-    # =================================================
-    # 🛑 STOP
-    # =================================================
+    # STOP
     if intent == "stop_mileage":
         result = stop_mileage_tracking()
 
@@ -229,36 +219,19 @@ def generate_reply(
         return (
             "🛑 Trip completed and saved.\n\n"
             f"Trip ID: {result['trip_id']}\n"
-            f"Destination: {result.get('destination') or 'Not specified'}\n"
-            f"Client: {result.get('client_name') or 'Not specified'}\n"
-            f"Purpose: {result.get('purpose') or 'Not specified'}\n"
             f"Distance: {result['distance_miles']} miles\n"
-            f"Duration: {result['duration_minutes']} minutes\n\n"
-            "📁 Saved to mileage log."
+            f"Duration: {result['duration_minutes']} minutes"
         )
-    
-        # =================================================
-    # 📅 SCHEDULE MEETING
-    # =================================================
-    if intent == "schedule_meeting":
 
+    # SCHEDULE
+    if intent == "schedule_meeting":
         details = extract_schedule_details(msg)
 
-        res = requests.post(
-            "https://ai-tax-agent-backend-1.onrender.com/calendar/create-event",
-            json=details
+        response = create_calendar_event_direct(
+            details["title"],
+            details["start"],
+            details["end"]
         )
-
-        print("STATUS:", res.status_code)
-        print("RAW RESPONSE:", res.text)
-
-        if res.status_code != 200:
-            return "⚠️ Calendar API failed."
-
-        try:
-            response = res.json()
-        except:
-            return "⚠️ Invalid calendar response."
 
         if response.get("success"):
             return (
@@ -267,9 +240,30 @@ def generate_reply(
             )
 
         return "⚠️ Could not create meeting."
-    
 
-        # =================================================
+    # AI RESPONSE
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are Max, an AI tax assistant."
+                },
+                {
+                    "role": "user",
+                    "content": msg
+                }
+            ],
+            max_tokens=300
+        )
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print("AI ERROR:", e)
+        return "Sorry, I couldn’t process that."     
+    # =================================================
     # 🤖 AI RESPONSE
     # =================================================
     try:

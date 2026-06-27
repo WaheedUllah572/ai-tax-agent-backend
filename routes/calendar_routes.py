@@ -170,3 +170,41 @@ async def create_event(data: CreateEventRequest):
         "success": True,
         "event": response.json()
     }
+
+def create_calendar_event_direct(title, start, end):
+
+    tokens = load_tokens()
+
+    if not tokens:
+        return {
+            "success": False,
+            "message": "Calendar not connected"
+        }
+
+    access_token = tokens.get("access_token")
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    event_body = {
+        "summary": title,
+        "start": {
+            "dateTime": start
+        },
+        "end": {
+            "dateTime": end
+        }
+    }
+
+    response = requests.post(
+        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        headers=headers,
+        json=event_body
+    )
+
+    return {
+        "success": response.status_code in [200, 201],
+        "event": response.json()
+    }
