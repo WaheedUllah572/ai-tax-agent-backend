@@ -176,7 +176,7 @@ async def create_event(data: CreateEventRequest):
 
 def create_calendar_event_direct(title, start, end):
 
-    tokens = load_tokens()
+    tokens = load_calendar_tokens()
 
     if not tokens:
         return {
