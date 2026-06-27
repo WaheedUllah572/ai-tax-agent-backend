@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
-from gmail_utils import save_tokens, load_tokens
+from calendar_utils import (
+    save_calendar_tokens,
+    load_calendar_tokens
+)
 from datetime import datetime, timezone
 from pydantic import BaseModel
 import os
@@ -62,7 +65,7 @@ async def calendar_callback(request: Request):
         data=data
     ).json()
 
-    save_tokens(tokens)
+    save_calendar_tokens(tokens)
 
     return {
     "success": True,
@@ -73,7 +76,7 @@ async def calendar_callback(request: Request):
 @router.get("/events")
 async def get_calendar_events():
 
-    tokens = load_tokens()
+    tokens = load_calendar_tokens()
 
     if not tokens:
         return {
