@@ -4,7 +4,7 @@ from typing import Dict, Optional
 from enum import Enum
 import re
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import requests
 from openai import OpenAI
 from services.help_knowledge import HELP_KNOWLEDGE
@@ -145,10 +145,10 @@ def extract_schedule_details(msg: str):
     end = start + timedelta(hours=1)
 
     return {
-        "title": title,
-        "start": start.isoformat(),
-        "end": end.isoformat()
-    }
+    "title": title,
+    "start": start.replace(tzinfo=timezone.utc).isoformat(),
+    "end": end.replace(tzinfo=timezone.utc).isoformat()
+}
 
 
 # =====================================================

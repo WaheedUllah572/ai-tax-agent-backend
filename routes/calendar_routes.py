@@ -164,10 +164,13 @@ async def create_event(data: CreateEventRequest):
     }
 
     response = requests.post(
-        "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-        headers=headers,
-        json=event_body
-    )
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+    headers=headers,
+    json=event_body
+)
+
+    print("CALENDAR STATUS:", response.status_code)
+    print("CALENDAR RESPONSE:", response.text)
 
     return {
         "success": True,
