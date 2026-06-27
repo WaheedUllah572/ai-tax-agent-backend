@@ -138,7 +138,7 @@ class CreateEventRequest(BaseModel):
 @router.post("/create-event")
 async def create_event(data: CreateEventRequest):
 
-    tokens = load_tokens()
+    tokens = load_calendar_tokens()
 
     if not tokens:
         return {
