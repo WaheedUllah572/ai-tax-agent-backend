@@ -4,7 +4,8 @@ from typing import Dict, Optional
 from enum import Enum
 import re
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import requests
 from openai import OpenAI
 from services.help_knowledge import HELP_KNOWLEDGE
@@ -139,7 +140,9 @@ def extract_schedule_details(msg: str):
     if person_match:
         title = f"Meeting with {person_match.group(1).strip()}"
 
-    now = datetime.now()
+    now = datetime.now(
+    ZoneInfo("Asia/Karachi")
+)
 
     # Default = today
     target_date = now.date()
@@ -171,9 +174,10 @@ def extract_schedule_details(msg: str):
             hour = 0
 
     start = datetime.combine(
-        target_date,
-        datetime.min.time()
-    ).replace(
+    target_date,
+    datetime.min.time(),
+    tzinfo=ZoneInfo("Asia/Karachi")
+).replace(
         hour=hour,
         minute=minute,
         second=0,
@@ -184,8 +188,8 @@ def extract_schedule_details(msg: str):
 
     return {
     "title": title,
-    "start": start.astimezone().isoformat(),
-    "end": end.astimezone().isoformat()
+    "start": start.isoformat(),
+    "end": end.isoformat()
 }
 
 
