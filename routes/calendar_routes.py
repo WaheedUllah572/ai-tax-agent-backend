@@ -38,6 +38,14 @@ async def connect_calendar():
 
     return RedirectResponse(url)
 
+@router.get("/status")
+async def calendar_status():
+    tokens = load_calendar_tokens()
+
+    return {
+        "connected": tokens is not None
+    }
+
 
 @router.get("/callback")
 async def calendar_callback(request: Request):
