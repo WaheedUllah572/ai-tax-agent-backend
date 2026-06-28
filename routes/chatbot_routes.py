@@ -126,18 +126,52 @@ def extract_trip_entities(msg: str) -> Dict:
     }
 
 def extract_schedule_details(msg: str):
+    msg_lower = msg.lower()
 
     title = "New Meeting"
 
-    if "with" in msg:
-        person = msg.split("with")[-1].strip()
-        title = f"Meeting with {person}"
+    # Extract person name
+    person_match = re.search(r"with\s+([a-zA-Z\s]+)", msg, re.IGNORECASE)
+    if person_match:
+        title = f"Meeting with {person_match.group(1).strip()}"
 
-    start = datetime.utcnow() + timedelta(days=1)
+    now = datetime.now()
 
-    start = start.replace(
-        hour=17,
-        minute=0,
+    # Default = today
+    target_date = now.date()
+
+    if "tomorrow" in msg_lower:
+        target_date = now.date() + timedelta(days=1)
+
+    elif "today" in msg_lower:
+        target_date = now.date()
+
+    # Time parser
+    time_match = re.search(
+        r"(\d{1,2})(?::(\d{2}))?\s*(am|pm)",
+        msg_lower
+    )
+
+    hour = 17
+    minute = 0
+
+    if time_match:
+        hour = int(time_match.group(1))
+        minute = int(time_match.group(2) or 0)
+        meridian = time_match.group(3)
+
+        if meridian == "pm" and hour != 12:
+            hour += 12
+
+        if meridian == "am" and hour == 12:
+            hour = 0
+
+    start = datetime.combine(
+        target_date,
+        datetime.min.time()
+    ).replace(
+        hour=hour,
+        minute=minute,
         second=0,
         microsecond=0
     )
@@ -145,10 +179,10 @@ def extract_schedule_details(msg: str):
     end = start + timedelta(hours=1)
 
     return {
-    "title": title,
-    "start": start.replace(tzinfo=timezone.utc).isoformat(),
-    "end": end.replace(tzinfo=timezone.utc).isoformat()
-}
+        "title": title,
+        "start": start.isoformat(),
+        "end": end.isoformat()
+    }
 
 
 # =====================================================
@@ -239,30 +273,7 @@ def generate_reply(
                 f"Start: {details['start']}"
             )
 
-        return "⚠️ Could not create meeting."
-
-    # AI RESPONSE
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are Max, an AI tax assistant."
-                },
-                {
-                    "role": "user",
-                    "content": msg
-                }
-            ],
-            max_tokens=300
-        )
-
-        return response.choices[0].message.content.strip()
-
-    except Exception as e:
-        print("AI ERROR:", e)
-        return "Sorry, I couldn’t process that."  
+        return "⚠️ Could not create meeting."  
     # =================================================
     # 🤖 AI RESPONSE
     # =================================================
