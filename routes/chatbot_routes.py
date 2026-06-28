@@ -131,7 +131,11 @@ def extract_schedule_details(msg: str):
     title = "New Meeting"
 
     # Extract person name
-    person_match = re.search(r"with\s+([a-zA-Z\s]+)", msg, re.IGNORECASE)
+    person_match = re.search(
+    r"with\s+([a-zA-Z]+)",
+    msg,
+    re.IGNORECASE
+)
     if person_match:
         title = f"Meeting with {person_match.group(1).strip()}"
 
@@ -179,10 +183,10 @@ def extract_schedule_details(msg: str):
     end = start + timedelta(hours=1)
 
     return {
-        "title": title,
-        "start": start.isoformat(),
-        "end": end.isoformat()
-    }
+    "title": title,
+    "start": start.astimezone().isoformat(),
+    "end": end.astimezone().isoformat()
+}
 
 
 # =====================================================
