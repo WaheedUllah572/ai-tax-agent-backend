@@ -162,14 +162,16 @@ async def create_event(data: CreateEventRequest):
     }
 
     event_body = {
-        "summary": data.title,
-        "start": {
-            "dateTime": data.start
-        },
-        "end": {
-            "dateTime": data.end
-        }
+    "summary": title,
+    "start": {
+        "dateTime": start,
+        "timeZone": "Asia/Karachi"
+    },
+    "end": {
+        "dateTime": end,
+        "timeZone": "Asia/Karachi"
     }
+}
 
     response = requests.post(
     "https://www.googleapis.com/calendar/v3/calendars/primary/events",
