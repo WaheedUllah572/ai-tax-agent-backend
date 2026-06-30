@@ -7,6 +7,7 @@ import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import requests
+from models.storage import get_settings
 from openai import OpenAI
 from services.help_knowledge import HELP_KNOWLEDGE
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
@@ -131,18 +132,24 @@ def extract_schedule_details(msg: str):
 
     title = "New Meeting"
 
-    # Extract person name
     person_match = re.search(
-    r"with\s+([a-zA-Z]+)",
-    msg,
-    re.IGNORECASE
-)
+        r"with\s+([a-zA-Z\s]+?)(?:\s+today|\s+tomorrow|\s+at|$)",
+        msg,
+        re.IGNORECASE
+    )
+
     if person_match:
         title = f"Meeting with {person_match.group(1).strip()}"
 
+    settings = get_settings()
+    user_timezone = settings.get(
+        "timezone",
+        "Asia/Karachi"
+    )
+
     now = datetime.now(
-    ZoneInfo("Asia/Karachi")
-)
+        ZoneInfo(user_timezone)
+    )
 
     # Default = today
     target_date = now.date()
@@ -176,7 +183,7 @@ def extract_schedule_details(msg: str):
     start = datetime.combine(
     target_date,
     datetime.min.time(),
-    tzinfo=ZoneInfo("Asia/Karachi")
+    tzinfo=ZoneInfo(user_timezone)
 ).replace(
         hour=hour,
         minute=minute,

@@ -138,8 +138,13 @@ def get_settings():
 
     if not data:
         return {
-            "jurisdiction": "US"
-        }
+    "jurisdiction": "US",
+    "timezone": "Asia/Karachi",
+    "onboarding_completed": False,
+    "business_name": "",
+    "business_type": "",
+    "account_count": 1
+}
 
     return data
 
