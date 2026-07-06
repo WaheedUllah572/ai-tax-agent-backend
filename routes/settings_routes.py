@@ -22,10 +22,10 @@ async def update_settings(data: dict = Body(...)):
 
     settings = get_settings()
 
-    ssettings["timezone"] = data.get(
-    "timezone",
-    settings.get("timezone", "Asia/Karachi")
-)
+    settings["jurisdiction"] = data.get(
+        "jurisdiction",
+        settings.get("jurisdiction", "US")
+    )
 
     settings["business_name"] = data.get(
         "business_name",

@@ -99,7 +99,7 @@ def enable_2fa(data: TwoFAEnableModel):
     save_users(users)
 
     totp = pyotp.TOTP(secret)
-    uri = totp.provisioning_uri(name=data.email, issuer_name="TaxMind AI")
+    uri = totp.provisioning_uri(name=data.email, issuer_name="TaxMate AI")
 
     qr = qrcode.make(uri)
     buffer = BytesIO()
