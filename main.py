@@ -23,6 +23,7 @@ print(
 # =====================================
 from routes.mileage_routes import router as mileage_router
 from routes.auth_routes import router as auth_router
+from routes.accountant_routes import router as accountant_router
 from routes.gmail_routes import router as gmail_router
 from routes.xero_routes import router as xero_router
 from routes.stripe_routes import router as stripe_router
@@ -87,6 +88,8 @@ app.include_router(mileage_router)
 app.include_router(auth_router)
 
 app.include_router(gmail_router)
+
+app.include_router(accountant_router)
 
 app.include_router(xero_router)
 

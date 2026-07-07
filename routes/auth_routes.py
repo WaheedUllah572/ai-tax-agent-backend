@@ -31,6 +31,7 @@ class RegisterModel(BaseModel):
     name: str
     email: str
     password: str
+    role: str = "business_owner"
 
 
 class LoginModel(BaseModel):
@@ -56,12 +57,13 @@ def register(data: RegisterModel):
         raise HTTPException(status_code=400, detail="User already exists")
 
     new_user = {
-        "name": data.name,
-        "email": data.email,
-        "password": data.password,
-        "2fa_enabled": False,
-        "2fa_secret": None
-    }
+    "name": data.name,
+    "email": data.email,
+    "password": data.password,
+    "role": data.role,
+    "2fa_enabled": False,
+    "2fa_secret": None
+}
 
     users.append(new_user)
     save_users(users)
@@ -79,9 +81,19 @@ def login(data: LoginModel):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
     if user["2fa_enabled"]:
-        return {"2fa_required": True, "email": data.email}
+        return {
+    "2fa_required": True,
+    "email": data.email,
+    "role": user.get("role", "owner"),
+    "name": user["name"]
+}
 
-    return {"login_success": True, "email": data.email}
+    return {
+    "login_success": True,
+    "email": data.email,
+    "role": user.get("role", "owner"),
+    "name": user["name"]
+}
 
 
 # ENABLE 2FA
@@ -126,4 +138,9 @@ def verify_2fa(data: TwoFAVerifyModel):
     if not totp.verify(data.code):
         raise HTTPException(status_code=400, detail="Invalid 2FA code")
 
-    return {"login_success": True, "email": data.email}
+    return {
+    "login_success": True,
+    "email": data.email,
+    "name": user["name"],
+    "role": user.get("role", "business_owner")
+}
