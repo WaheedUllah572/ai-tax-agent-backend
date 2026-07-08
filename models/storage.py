@@ -2,7 +2,7 @@ import json
 import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-
+CLIENT_FILE = os.path.join(BASE_DIR, "clients.json")
 RECEIPT_FILE = os.path.join(BASE_DIR, "receipts.json")
 MILEAGE_FILE = os.path.join(BASE_DIR, "mileage.json")
 TRANSACTION_FILE = os.path.join(BASE_DIR, "transactions.json")
@@ -155,3 +155,14 @@ def save_settings(data):
         SETTINGS_FILE,
         data
     )
+
+    # =====================================
+# CLIENTS
+# =====================================
+
+def get_clients():
+    return load_data(CLIENT_FILE)
+
+
+def save_clients(data):
+    save_data(CLIENT_FILE, data)

@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from routes.settings_routes import router as settings_router
 from routes.onboarding_routes import router as onboarding_router
+from routes.accountant_routes import router as accountant_router
 import uvicorn
 import os
 
@@ -88,6 +89,8 @@ app.include_router(mileage_router)
 app.include_router(auth_router)
 
 app.include_router(gmail_router)
+
+app.include_router(accountant_router)
 
 app.include_router(accountant_router)
 
