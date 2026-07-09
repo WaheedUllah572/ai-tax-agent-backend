@@ -6,7 +6,7 @@ import shutil
 
 from services.aiAnalyzer import analyze_receipt_image
 from services.irs_rules import apply_tax_rules
-
+from fastapi.responses import FileResponse
 from models.storage import (
     get_settings,
     get_receipts,
@@ -21,6 +21,16 @@ router = APIRouter(prefix="/receipts", tags=["Receipts"])
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@router.get("/image/{filename}")
+async def get_receipt_image(filename: str):
+
+    file_path = os.path.join(
+        UPLOAD_FOLDER,
+        filename
+    )
+
+    return FileResponse(file_path)
 
 
 @router.post("/upload")
@@ -355,6 +365,34 @@ async def update_receipt(
 
     return {"success": True}
 
+@router.put("/notes/{receipt_id}")
+async def save_receipt_note(
+    receipt_id: str,
+    data: dict = Body(...)
+):
+
+    receipts = get_receipts()
+
+    for r in receipts:
+
+        if r["id"] == receipt_id:
+
+            r["accountant_note"] = data.get("note", "")
+
+            r["audit_log"].append({
+                "action": "note_added",
+                "by": "accountant",
+                "date": datetime.utcnow().isoformat()
+            })
+
+            break
+
+    save_receipts(receipts)
+
+    return {
+        "success": True
+    }
+
 
 @router.put("/approve/{receipt_id}")
 async def approve_receipt(
@@ -457,6 +495,35 @@ async def mark_duplicate(
     save_receipts(receipts)
 
     return {"success": True}
+
+@router.put("/reject/{receipt_id}")
+async def reject_receipt(receipt_id: str):
+
+    receipts = get_receipts()
+
+    for r in receipts:
+
+        if r["id"] == receipt_id:
+
+            r["status"] = "Rejected"
+
+            r["locked"] = False
+
+            r["audit_log"].append({
+
+                "action": "rejected",
+
+                "by": "accountant",
+
+                "date": datetime.utcnow().isoformat()
+
+            })
+
+    save_receipts(receipts)
+
+    return {
+        "success": True
+    }
 
 @router.delete("/{receipt_id}")
 async def delete_receipt(

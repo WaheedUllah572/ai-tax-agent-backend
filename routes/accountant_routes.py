@@ -28,17 +28,71 @@ def accountant_dashboard():
 
     total_expenses = 0
 
+    approved = 0
+    pending = 0
+    rejected = 0
+    reviewed = 0
+
+    deductible_total = 0
+    non_deductible_total = 0
+
+    vendors = {}
+
     for r in receipts:
+
         try:
-            total_expenses += float(r.get("amount", 0))
+            amount = float(r.get("amount", 0))
         except:
-            pass
+            amount = 0
+
+        total_expenses += amount
+
+        status = r.get("status", "Pending")
+
+        if status == "Locked":
+            approved += 1
+        elif status == "Rejected":
+            rejected += 1
+        elif status == "Reviewed":
+            reviewed += 1
+        else:
+            pending += 1
+
+        deductible_total += float(
+            r.get("deductible_amount", 0)
+        )
+
+        non_deductible_total += (
+            amount - float(r.get("deductible_amount", 0))
+        )
+
+        vendor = r.get("vendor", "Unknown")
+
+        vendors[vendor] = vendors.get(vendor, 0) + amount
+
+    top_vendors = sorted(
+        vendors.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:5]
 
     return {
+
         "total_receipts": total_receipts,
         "total_transactions": total_transactions,
         "total_mileage_logs": total_mileage,
-        "total_expenses": round(total_expenses, 2),
+        "total_expenses": round(total_expenses,2),
+
+        "approved": approved,
+        "pending": pending,
+        "reviewed": reviewed,
+        "rejected": rejected,
+
+        "deductible_total": round(deductible_total,2),
+        "non_deductible_total": round(non_deductible_total,2),
+
+        "top_vendors": top_vendors,
+
         "receipts": receipts,
         "transactions": transactions,
         "mileage": mileage,
