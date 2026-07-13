@@ -55,11 +55,16 @@ def detect_intent(msg: str) -> Optional[str]:
     msg = msg.lower()
 
     start_keywords = [
-        "driving",
-        "start trip",
-        "start tracking",
-        "begin trip",
-    ]
+    "start mileage",
+    "start mile",
+    "start trip",
+    "start tracking",
+    "begin trip",
+    "begin mileage",
+    "driving",
+    "i am driving",
+    "i'm driving",
+]
 
     stop_keywords = [
         "arrived",
@@ -213,17 +218,21 @@ def generate_reply(
     msg = message.strip()
     intent = detect_intent(msg)
 
+    # ==========================================
     # START MILEAGE
-    if intent == "start_mileage" and not session.get("awaiting_trip_edit"):
-        entities = extract_trip_entities(msg)
-        session["pending_trip_confirmation"] = entities
+    # ==========================================
+    if intent == "start_mileage":
+
+        started = start_mileage_tracking()
+
+        if not started:
+            return "⚠️ Mileage tracking is already running."
 
         return (
-            "🚗 I detected a new trip.\n\n"
-            f"Destination: {entities.get('destination') or 'Not specified'}\n"
-            f"Client: {entities.get('client_name') or 'Not specified'}\n"
-            f"Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-            "Type CONFIRM to start or EDIT to modify."
+            "🚗 Mileage tracking started successfully.\n\n"
+            "I'm now tracking your business trip.\n\n"
+            "When you arrive, simply type:\n"
+            "'stop mileage'"
         )
 
     # EDIT
@@ -266,11 +275,12 @@ def generate_reply(
             return "⚠️ No active trip to stop."
 
         return (
-            "🛑 Trip completed and saved.\n\n"
-            f"Trip ID: {result['trip_id']}\n"
-            f"Distance: {result['distance_miles']} miles\n"
-            f"Duration: {result['duration_minutes']} minutes"
-        )
+    "✅ Mileage tracking stopped.\n\n"
+    "Your business trip has been saved successfully.\n\n"
+    f"📍 Distance: {result['distance_miles']} miles\n"
+    f"⏱ Duration: {result['duration_minutes']} minutes\n"
+    f"💰 Tax Deduction: ${result['deductible_amount']}"
+)
 
     # SCHEDULE
     if intent == "schedule_meeting":
