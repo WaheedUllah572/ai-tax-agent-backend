@@ -69,7 +69,7 @@ def stop_mileage_tracking():
         "notes": meta.get("notes"),
 
         # IRS REQUIRED FIELDS
-        "start_location": meta.get("start_location"),
+        "start_location": "Current Location",
         "end_location": meta.get("end_location"),
         "business_purpose": meta.get("purpose"),
         "odometer_start": meta.get("odometer_start"),
