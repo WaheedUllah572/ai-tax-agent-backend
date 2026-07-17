@@ -248,31 +248,38 @@ def generate_reply(
 )
 
     # EDIT
+    # EDIT
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
-        session["pending_trip_confirmation"] = None
+
         session["awaiting_trip_edit"] = True
+
         return (
-    "Please tell me the corrected trip.\n\n"
-
-    "Example:\n"
-
-    "I'm driving to ABC Plumbing to meet John about tax planning."
-)
+            "Please tell me the corrected trip.\n\n"
+            "Example:\n"
+            "I'm driving to ABC Plumbing to meet John about tax planning."
+        )
 
     if session.get("awaiting_trip_edit"):
+
         entities = extract_trip_entities(msg)
-        session["pending_trip_confirmation"] = entities
+
+        if (
+            entities.get("destination")
+            and entities.get("client_name")
+            and entities.get("purpose")
+        ):
+            session["pending_trip_confirmation"] = entities
+
         session["awaiting_trip_edit"] = False
 
         return (
             "🚗 Updated trip detected.\n\n"
-            f"Destination: {entities.get('destination') or 'Not specified'}\n"
-            f"Client: {entities.get('client_name') or 'Not specified'}\n"
-            f"Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-            "Type CONFIRM to start or EDIT to modify."
+            f"📍 Destination: {session['pending_trip_confirmation']['destination']}\n"
+            f"👤 Meeting: {session['pending_trip_confirmation']['client_name']}\n"
+            f"📝 Purpose: {session['pending_trip_confirmation']['purpose']}\n\n"
+            "Click CONFIRM to start mileage or EDIT to modify."
         )
 
-    # CONFIRM
     # CONFIRM
     if msg.lower() == "confirm" and session.get("pending_trip_confirmation"):
 
