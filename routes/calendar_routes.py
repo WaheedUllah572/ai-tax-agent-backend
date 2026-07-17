@@ -224,3 +224,11 @@ def create_calendar_event_direct(title, start, end):
         "success": response.status_code in [200, 201],
         "event": response.json()
     }
+
+def check_upcoming_meetings():
+    """
+    Future feature:
+    Notify the user before meetings
+    to start mileage tracking.
+    """
+    pass

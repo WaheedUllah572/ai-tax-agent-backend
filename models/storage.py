@@ -139,11 +139,10 @@ def get_settings():
     if not data:
         return {
     "jurisdiction": "US",
-    "timezone": "Asia/Karachi",
+    "country": "United States",
     "onboarding_completed": False,
     "business_name": "",
     "business_type": "",
-    "account_count": 1
 }
 
     return data

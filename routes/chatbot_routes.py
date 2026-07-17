@@ -126,11 +126,18 @@ def extract_trip_entities(msg: str) -> Dict:
         purpose = purpose_match.group(1).strip()
 
     return {
-        "destination": destination,
-        "client_name": client_name,
-        "purpose": purpose,
-        "notes": None
-    }
+    "destination": destination,
+    "client_name": client_name,
+    "purpose": purpose,
+
+    "start_location": "Current Location",
+
+    "business_name": destination,
+
+    "meeting_with": client_name,
+
+    "notes": None
+}
 
 def extract_schedule_details(msg: str):
     msg_lower = msg.lower()
@@ -221,19 +228,24 @@ def generate_reply(
     # ==========================================
     # START MILEAGE
     # ==========================================
+
     if intent == "start_mileage":
 
-        started = start_mileage_tracking()
+     entities = extract_trip_entities(msg)
 
-        if not started:
-            return "⚠️ Mileage tracking is already running."
+    session["pending_trip_confirmation"] = entities
 
-        return (
-            "🚗 Mileage tracking started successfully.\n\n"
-            "I'm now tracking your business trip.\n\n"
-            "When you arrive, simply type:\n"
-            "'stop mileage'"
-        )
+    return (
+        "🚗 I found the following trip information:\n\n"
+
+        f"📍 Destination: {entities.get('destination') or 'Not specified'}\n"
+        f"👤 Meeting With: {entities.get('client_name') or 'Not specified'}\n"
+        f"📝 Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
+
+        "Please review it.\n\n"
+
+        "Press CONFIRM to start mileage or EDIT to make changes."
+    )
 
     # EDIT
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
@@ -265,7 +277,19 @@ def generate_reply(
         session["pending_trip_confirmation"] = None
         session["awaiting_trip_edit"] = False
 
-        return "✅ Trip confirmed and tracking started."
+        return (
+    "✅ Mileage tracking has started.\n\n"
+
+    f"📍 Destination: {entities['destination']}\n"
+    f"👤 Meeting: {entities['client_name']}\n"
+    f"📝 Purpose: {entities['purpose']}\n\n"
+
+    "I'm now tracking your business trip.\n"
+
+    "When you arrive simply say:\n"
+
+    "'Stop mileage'"
+)
 
     # STOP
     if intent == "stop_mileage":
@@ -310,14 +334,14 @@ def generate_reply(
                     "role": "system",
                     "content":
                         (
-                            "You are Max, TaxMate's app help assistant. "
+                            "You are Max, RefundPilot's app help assistant."
                             "Only answer questions about how to use TaxMate features. "
                             "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
                             + HELP_KNOWLEDGE
                         )
                         if mode == "help"
                         else
-                        "You are Max, an AI tax assistant helping users with taxes, expenses, and bookkeeping."
+                        "You are Max, RefundPilot's AI business assistant helping users manage receipts, mileage, bookkeeping and taxes."
                 },
                 {"role": "user", "content": msg}
             ],

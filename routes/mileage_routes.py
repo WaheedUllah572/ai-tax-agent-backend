@@ -29,9 +29,11 @@ def start_mileage_tracking(trip_meta: Optional[Dict] = None):
         return False
 
     ACTIVE_TRIPS["current"] = {
-        "start_time": datetime.utcnow(),
-        "meta": trip_meta or {}
-    }
+    "start_time": datetime.utcnow(),
+    "status": "In Progress",
+    "created_by": "Max AI",
+    "meta": trip_meta or {}
+}
 
     return True
 
@@ -61,15 +63,18 @@ def stop_mileage_tracking():
         "duration_minutes": round(duration_minutes, 1),
         "distance_miles": distance_miles,
         "trip_type": "business",
+        "status": "Completed",
 
         # EXISTING FIELDS
         "destination": meta.get("destination"),
+        "business_name": meta.get("business_name"),
         "client_name": meta.get("client_name"),
+        "meeting_with": meta.get("meeting_with"),
         "purpose": meta.get("purpose"),
         "notes": meta.get("notes"),
 
         # IRS REQUIRED FIELDS
-        "start_location": "Current Location",
+        "start_location": meta.get("start_location"),
         "end_location": meta.get("end_location"),
         "business_purpose": meta.get("purpose"),
         "odometer_start": meta.get("odometer_start"),
@@ -79,15 +84,16 @@ def stop_mileage_tracking():
         "deductible_amount": deductible_amount,
         "annual_miles_total": annual_miles_total,
         "method": "standard_mileage",
+        "created_by": "Max AI",
 
         # AUDIT TRAIL
         "audit_log": [
-            {
-                "action": "trip_created",
-                "by": "system",
-                "date": datetime.utcnow().isoformat()
-            }
-        ]
+    {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": datetime.utcnow().isoformat()
+    }
+]
     }
 
     history.append(trip_record)
