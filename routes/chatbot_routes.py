@@ -233,9 +233,9 @@ def generate_reply(
 
      entities = extract_trip_entities(msg)
 
-    session["pending_trip_confirmation"] = entities
+     session["pending_trip_confirmation"] = entities
 
-    return (
+     return (
         "🚗 I found the following trip information:\n\n"
 
         f"📍 Destination: {entities.get('destination') or 'Not specified'}\n"
@@ -335,7 +335,7 @@ def generate_reply(
                     "content":
                         (
                             "You are Max, RefundPilot's app help assistant."
-                            "Only answer questions about how to use TaxMate features. "
+                            "Only answer questions about how to use RefundPilot features."
                             "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
                             + HELP_KNOWLEDGE
                         )
