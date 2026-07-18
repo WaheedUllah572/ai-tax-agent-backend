@@ -37,10 +37,10 @@ async def update_settings(data: dict = Body(...)):
         settings.get("business_type", "")
     )
 
-    settings["timezone"] = data.get(
-        "timezone",
-        settings.get("timezone", "Asia/Karachi")
-    )
+    settings["country"] = data.get(
+    "country",
+    settings.get("country", "United States")
+)
 
     settings["account_count"] = data.get(
         "account_count",
