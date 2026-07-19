@@ -221,38 +221,53 @@ def generate_reply(
     session_id: str,
     mode: str = "tax"
 ) -> str:
-
     msg = message.strip()
+
+    # Help mode must return before operational intent detection.
+    if mode == "help":
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are Max, RefundPilot's app help assistant. "
+                            "Only answer questions about how to use RefundPilot features. "
+                            "Explain where features are located and how to use them. "
+                            "Do not execute mileage tracking, calendar scheduling, "
+                            "or any other application action. "
+                            "If the user asks tax, legal, or accounting questions, "
+                            "tell them to switch to Tax Expert mode.\n\n"
+                            + HELP_KNOWLEDGE
+                        ),
+                    },
+                    {"role": "user", "content": msg},
+                ],
+                max_tokens=300,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            print("HELP AI ERROR:", e)
+            return "Sorry, I couldn't process that help request. Please try again."
+
+    # Operational actions are available only outside Help mode.
     intent = detect_intent(msg)
 
-    # ==========================================
-    # START MILEAGE
-    # ==========================================
-
     if intent == "start_mileage":
+        entities = extract_trip_entities(msg)
+        session["pending_trip_confirmation"] = entities
+        return (
+            "🚗 I found the following trip information:\n\n"
+            f"📍 Destination: {entities.get('destination') or 'Not specified'}\n"
+            f"👤 Meeting With: {entities.get('client_name') or 'Not specified'}\n"
+            f"📝 Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
+            "Please review your trip before tracking begins.\n\n"
+            "Click CONFIRM to start mileage or EDIT to make changes."
+        )
 
-     entities = extract_trip_entities(msg)
-
-     session["pending_trip_confirmation"] = entities
-
-     return (
-    "🚗 I found the following trip information:\n\n"
-
-    f"📍 Destination: {entities.get('destination') or 'Not specified'}\n"
-    f"👤 Meeting With: {entities.get('client_name') or 'Not specified'}\n"
-    f"📝 Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-
-    "Please review your trip before tracking begins.\n\n"
-
-    "Click CONFIRM to start mileage or EDIT to make changes."
-)
-
-    # EDIT
-    # EDIT
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
-
         session["awaiting_trip_edit"] = True
-
         return (
             "Please tell me the corrected trip.\n\n"
             "Example:\n"
@@ -260,32 +275,31 @@ def generate_reply(
         )
 
     if session.get("awaiting_trip_edit"):
-
         entities = extract_trip_entities(msg)
-
         if (
             entities.get("destination")
             and entities.get("client_name")
             and entities.get("purpose")
         ):
             session["pending_trip_confirmation"] = entities
-
-        session["awaiting_trip_edit"] = False
+            session["awaiting_trip_edit"] = False
+            return (
+                "🚗 Updated trip detected.\n\n"
+                f"📍 Destination: {entities['destination']}\n"
+                f"👤 Meeting: {entities['client_name']}\n"
+                f"📝 Purpose: {entities['purpose']}\n\n"
+                "Click CONFIRM to start mileage or EDIT to modify."
+            )
 
         return (
-            "🚗 Updated trip detected.\n\n"
-            f"📍 Destination: {session['pending_trip_confirmation']['destination']}\n"
-            f"👤 Meeting: {session['pending_trip_confirmation']['client_name']}\n"
-            f"📝 Purpose: {session['pending_trip_confirmation']['purpose']}\n\n"
-            "Click CONFIRM to start mileage or EDIT to modify."
+            "⚠️ I couldn't identify all required trip details.\n\n"
+            "Please provide the destination, who you are meeting, and the business purpose.\n\n"
+            "Example: I'm driving to ABC Plumbing to meet John about tax planning."
         )
 
-    # CONFIRM
     if msg.lower() == "confirm" and session.get("pending_trip_confirmation"):
-
         entities = session["pending_trip_confirmation"]
 
-        # Validate trip details
         if (
             not entities.get("destination")
             or not entities.get("client_name")
@@ -296,9 +310,8 @@ def generate_reply(
                 "Please click EDIT and enter the complete trip before confirming."
             )
 
-        # Start mileage tracking
         if not start_mileage_tracking(trip_meta=entities):
-            return "⚠️ Mileage tracking already running."
+            return "⚠️ Mileage tracking is already running."
 
         session["trip_details"] = entities
         session["pending_trip_confirmation"] = None
@@ -306,80 +319,56 @@ def generate_reply(
 
         return (
             "✅ Mileage tracking has started.\n\n"
-
             f"📍 Destination: {entities['destination']}\n"
             f"👤 Meeting: {entities['client_name']}\n"
             f"📝 Purpose: {entities['purpose']}\n\n"
-
             "I'm now tracking your business trip.\n\n"
-
-            "When you arrive simply type:\n"
-
-            "'Stop mileage'"
+            "When you arrive, simply type 'Stop mileage'."
         )
 
-    # STOP
     if intent == "stop_mileage":
         result = stop_mileage_tracking()
-
         if not result:
             return "⚠️ No active trip to stop."
-
         return (
-    "✅ Mileage tracking stopped.\n\n"
-    "Your business trip has been saved successfully.\n\n"
-    f"📍 Distance: {result['distance_miles']} miles\n"
-    f"⏱ Duration: {result['duration_minutes']} minutes\n"
-    f"💰 Tax Deduction: ${result['deductible_amount']}"
-)
-
-    # SCHEDULE
-    if intent == "schedule_meeting":
-        details = extract_schedule_details(msg)
-
-        response = create_calendar_event_direct(
-            details["title"],
-            details["start"],
-            details["end"]
+            "✅ Mileage tracking stopped.\n\n"
+            "Your business trip has been saved successfully.\n\n"
+            f"📍 Distance: {result['distance_miles']} miles\n"
+            f"⏱ Duration: {result['duration_minutes']} minutes\n"
+            f"💰 Tax Deduction: ${result['deductible_amount']}"
         )
 
+    if intent == "schedule_meeting":
+        details = extract_schedule_details(msg)
+        response = create_calendar_event_direct(
+            details["title"], details["start"], details["end"]
+        )
         if response.get("success"):
             return (
                 f"✅ Scheduled: {details['title']}\n"
                 f"Start: {details['start']}"
             )
+        return "⚠️ Could not create meeting."
 
-        return "⚠️ Could not create meeting."  
-    # =================================================
-    # 🤖 AI RESPONSE
-    # =================================================
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
-                    "content":
-                        (
-                            "You are Max, RefundPilot's app help assistant."
-                            "Only answer questions about how to use RefundPilot features."
-                            "If the user asks tax/legal/accounting questions, tell them to switch to Tax Assistant mode.\n\n"
-                            + HELP_KNOWLEDGE
-                        )
-                        if mode == "help"
-                        else
-                        "You are Max, RefundPilot's AI business assistant helping users manage receipts, mileage, bookkeeping and taxes."
+                    "content": (
+                        "You are Max, RefundPilot's AI business assistant helping "
+                        "users manage receipts, mileage, bookkeeping and taxes."
+                    ),
                 },
-                {"role": "user", "content": msg}
+                {"role": "user", "content": msg},
             ],
-            max_tokens=300
+            max_tokens=300,
         )
-
         return response.choices[0].message.content.strip()
-
     except Exception as e:
         print("AI ERROR:", e)
-        return "Sorry, I couldn’t process that. Please try again."
+        return "Sorry, I couldn't process that. Please try again."
 
 
 # =====================================================
