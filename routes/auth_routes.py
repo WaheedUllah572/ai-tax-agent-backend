@@ -1,37 +1,52 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-import json
-import pyotp
-import qrcode
-import base64
-from io import BytesIO
+from supabase import create_client
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-USERS_DB = "users.json"
+# =====================================================
+# SUPABASE CONFIGURATION
+# =====================================================
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+
+if not SUPABASE_URL:
+    raise RuntimeError("SUPABASE_URL is not configured")
+
+if not SUPABASE_KEY:
+    raise RuntimeError("SUPABASE_KEY is not configured")
+
+if not SUPABASE_SERVICE_ROLE_KEY:
+    raise RuntimeError("SUPABASE_SERVICE_ROLE_KEY is not configured")
 
 
-def load_users():
-    try:
-        with open(USERS_DB, "r") as f:
-            return json.load(f)
-    except:
-        return []
+# Normal client used for authentication
+supabase = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+# Admin client used only by backend
+supabase_admin = create_client(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY
+)
 
 
-def save_users(data):
-    with open(USERS_DB, "w") as f:
-        json.dump(data, f, indent=4)
+# =====================================================
+# REQUEST MODELS
+# =====================================================
 
-
-# -----------------------------
-# Pydantic Models (Fix 400 Error)
-# -----------------------------
 class RegisterModel(BaseModel):
     name: str
     email: str
     password: str
-    role: str = "business_owner"
 
 
 class LoginModel(BaseModel):
@@ -39,108 +54,158 @@ class LoginModel(BaseModel):
     password: str
 
 
-class TwoFAVerifyModel(BaseModel):
-    email: str
-    code: str
+# =====================================================
+# REGISTER BUSINESS OWNER
+# =====================================================
 
-
-class TwoFAEnableModel(BaseModel):
-    email: str
-
-
-# REGISTER
 @router.post("/register")
 def register(data: RegisterModel):
-    users = load_users()
 
-    if any(u["email"] == data.email for u in users):
-        raise HTTPException(status_code=400, detail="User already exists")
+    email = data.email.strip().lower()
+    name = data.name.strip()
 
-    new_user = {
-    "name": data.name,
-    "email": data.email,
-    "password": data.password,
-    "role": data.role,
-    "2fa_enabled": False,
-    "2fa_secret": None
-}
+    if not name:
+        raise HTTPException(
+            status_code=400,
+            detail="Name is required"
+        )
 
-    users.append(new_user)
-    save_users(users)
+    if len(data.password) < 8:
+        raise HTTPException(
+            status_code=400,
+            detail="Password must be at least 8 characters"
+        )
 
-    return {"message": "Registration success"}
+    try:
+        # Create user through Supabase Auth.
+        # Supabase handles password storage securely.
+        auth_response = supabase.auth.sign_up({
+            "email": email,
+            "password": data.password,
+        })
+
+        user = auth_response.user
+
+        if not user:
+            raise HTTPException(
+                status_code=400,
+                detail="Unable to create user account"
+            )
+
+        # Create RefundPilot profile.
+        # Public registration is ALWAYS business_owner.
+        profile = {
+            "id": str(user.id),
+            "name": name,
+            "role": "business_owner",
+        }
+
+        supabase_admin.table(
+            "profiles"
+        ).insert(profile).execute()
+
+        return {
+            "success": True,
+            "message": "Registration successful. Please login."
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+
+        print(
+            "SUPABASE REGISTRATION ERROR:",
+            str(e)
+        )
+
+        error_message = str(e).lower()
+
+        if (
+            "already registered" in error_message
+            or "already exists" in error_message
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="User already exists"
+            )
+
+        raise HTTPException(
+            status_code=400,
+            detail="Registration failed"
+        )
 
 
+# =====================================================
 # LOGIN
+# =====================================================
+
 @router.post("/login")
 def login(data: LoginModel):
-    users = load_users()
-    user = next((u for u in users if u["email"] == data.email and u["password"] == data.password), None)
 
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid email or password")
+    email = data.email.strip().lower()
 
-    if user["2fa_enabled"]:
+    try:
+        # Supabase verifies the password.
+        auth_response = (
+            supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": data.password,
+            })
+        )
+
+        user = auth_response.user
+        session = auth_response.session
+
+        if not user or not session:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid email or password"
+            )
+
+        # Get application profile
+        profile_response = (
+            supabase_admin
+            .table("profiles")
+            .select("*")
+            .eq("id", str(user.id))
+            .limit(1)
+            .execute()
+        )
+
+        if not profile_response.data:
+            raise HTTPException(
+                status_code=404,
+                detail="User profile not found"
+            )
+
+        profile = profile_response.data[0]
+
         return {
-    "2fa_required": True,
-    "email": data.email,
-    "role": user.get("role", "owner"),
-    "name": user["name"]
-}
+            "login_success": True,
+            "email": user.email,
+            "name": profile.get("name"),
+            "role": profile.get(
+                "role",
+                "business_owner"
+            ),
 
-    return {
-    "login_success": True,
-    "email": data.email,
-    "role": user.get("role", "owner"),
-    "name": user["name"]
-}
+            # Needed later for authenticated API requests
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+        }
 
+    except HTTPException:
+        raise
 
-# ENABLE 2FA
-@router.post("/enable-2fa")
-def enable_2fa(data: TwoFAEnableModel):
-    users = load_users()
-    user = next((u for u in users if u["email"] == data.email), None)
+    except Exception as e:
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        print(
+            "SUPABASE LOGIN ERROR:",
+            str(e)
+        )
 
-    secret = pyotp.random_base32()
-    user["2fa_secret"] = secret
-    user["2fa_enabled"] = True
-    save_users(users)
-
-    totp = pyotp.TOTP(secret)
-    uri = totp.provisioning_uri(name=data.email, issuer_name="TaxMate AI")
-
-    qr = qrcode.make(uri)
-    buffer = BytesIO()
-    qr.save(buffer, format="PNG")
-    qr_b64 = base64.b64encode(buffer.getvalue()).decode()
-
-    return {"qr_code": qr_b64, "secret": secret}
-
-
-# VERIFY 2FA
-@router.post("/verify-2fa")
-def verify_2fa(data: TwoFAVerifyModel):
-    users = load_users()
-    user = next((u for u in users if u["email"] == data.email), None)
-
-    if not user:
-        raise HTTPException(status_code=400, detail="User not found")
-
-    if not user["2fa_enabled"]:
-        raise HTTPException(status_code=400, detail="2FA not enabled")
-
-    totp = pyotp.TOTP(user["2fa_secret"])
-
-    if not totp.verify(data.code):
-        raise HTTPException(status_code=400, detail="Invalid 2FA code")
-
-    return {
-    "login_success": True,
-    "email": data.email,
-    "name": user["name"],
-    "role": user.get("role", "business_owner")
-}
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid email or password"
+        )
