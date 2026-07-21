@@ -24,9 +24,7 @@ GOOGLE_CALENDAR_REDIRECT_URI = os.getenv(
 
 
 @router.get("/connect")
-async def connect_calendar(
-    current_user=Depends(get_current_user)
-):
+async def connect_calendar():
 
     scope = "https://www.googleapis.com/auth/calendar"
 
@@ -52,11 +50,9 @@ async def calendar_status(
         "connected": tokens is not None
     }
 
-
 @router.get("/callback")
 async def calendar_callback(
-    request: Request,
-    current_user=Depends(get_current_user)
+    request: Request
 ):
 
     code = request.query_params.get("code")

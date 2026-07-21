@@ -26,9 +26,7 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 
 @router.get("/connect")
-async def gmail_connect(
-    current_user=Depends(get_current_user)
-):
+async def gmail_connect():
     state = secrets.token_urlsafe(16)
     scope = "https://www.googleapis.com/auth/gmail.readonly"
 
@@ -48,8 +46,7 @@ async def gmail_connect(
 
 @router.get("/callback")
 async def gmail_callback(
-    request: Request,
-    current_user=Depends(get_current_user)
+    request: Request
 ):
     code = request.query_params.get("code")
 
