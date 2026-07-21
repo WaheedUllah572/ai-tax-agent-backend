@@ -5,6 +5,8 @@ from calendar_utils import (
     load_calendar_tokens
 )
 from datetime import datetime, timezone
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from pydantic import BaseModel
 import os
 import requests
@@ -22,7 +24,9 @@ GOOGLE_CALENDAR_REDIRECT_URI = os.getenv(
 
 
 @router.get("/connect")
-async def connect_calendar():
+async def connect_calendar(
+    current_user=Depends(get_current_user)
+):
 
     scope = "https://www.googleapis.com/auth/calendar"
 
@@ -39,7 +43,9 @@ async def connect_calendar():
     return RedirectResponse(url)
 
 @router.get("/status")
-async def calendar_status():
+async def calendar_status(
+    current_user=Depends(get_current_user)
+):
     tokens = load_calendar_tokens()
 
     return {
@@ -48,7 +54,10 @@ async def calendar_status():
 
 
 @router.get("/callback")
-async def calendar_callback(request: Request):
+async def calendar_callback(
+    request: Request,
+    current_user=Depends(get_current_user)
+):
 
     code = request.query_params.get("code")
 
@@ -82,7 +91,9 @@ async def calendar_callback(request: Request):
 }
 
 @router.get("/events")
-async def get_calendar_events():
+async def get_calendar_events(
+    current_user=Depends(get_current_user)
+):
 
     tokens = load_calendar_tokens()
 
@@ -144,7 +155,10 @@ class CreateEventRequest(BaseModel):
 
 
 @router.post("/create-event")
-async def create_event(data: CreateEventRequest):
+async def create_event(
+    data: CreateEventRequest,
+    current_user=Depends(get_current_user)
+):
 
     tokens = load_calendar_tokens()
 
@@ -162,13 +176,13 @@ async def create_event(data: CreateEventRequest):
     }
 
     event_body = {
-    "summary": title,
+    "summary": data.title,
     "start": {
-        "dateTime": start,
+        "dateTime": data.start,
         "timeZone": "Asia/Karachi"
     },
     "end": {
-        "dateTime": end,
+        "dateTime": data.end,
         "timeZone": "Asia/Karachi"
     }
 }

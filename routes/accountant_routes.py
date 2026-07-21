@@ -1,6 +1,6 @@
 from fastapi import APIRouter
-import json
-USERS_DB = "users.json"
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from models.storage import (
     get_receipts,
     get_transactions,
@@ -16,7 +16,9 @@ router = APIRouter(
 
 
 @router.get("/dashboard")
-def accountant_dashboard():
+def accountant_dashboard(
+    current_user=Depends(get_current_user)
+):
 
     receipts = get_receipts()
     transactions = get_transactions()
@@ -99,8 +101,7 @@ def accountant_dashboard():
     }
 
 
-@router.get("/clients")
-def get_all_clients():
+    return []
 
     users = load_users()
 
@@ -117,8 +118,9 @@ def get_all_clients():
 
     return clients
 
-@router.get("/client/{email}")
-def get_client(email: str):
+    return {
+        "message": "Accountant client management will be available in the next version."
+    }
 
     users = load_users()
 
@@ -141,9 +143,3 @@ def get_client(email: str):
         "mileage": mileage,
     }
     
-def load_users():
-    try:
-        with open(USERS_DB, "r") as f:
-            return json.load(f)
-    except:
-        return []

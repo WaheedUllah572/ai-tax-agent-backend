@@ -9,6 +9,8 @@ from zoneinfo import ZoneInfo
 import requests
 from models.storage import get_settings
 from openai import OpenAI
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from services.help_knowledge import HELP_KNOWLEDGE
 from routes.mileage_routes import start_mileage_tracking, stop_mileage_tracking
 from routes.calendar_routes import create_calendar_event_direct
@@ -375,12 +377,15 @@ def generate_reply(
 # API
 # =====================================================
 @router.post("/chat")
-async def chat(data: ChatRequest):
-    session = get_session(data.session_id)
+async def chat(
+    data: ChatRequest,
+    current_user=Depends(get_current_user)
+):
+    session = get_session(str(current_user.id))
     reply = generate_reply(
     data.message,
     session,
-    data.session_id,
+    str(current_user.id),
     data.mode
 )
     return {

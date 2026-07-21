@@ -3,9 +3,11 @@ import uuid
 from datetime import datetime
 import os
 import shutil
-
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from services.aiAnalyzer import analyze_receipt_image
 from services.irs_rules import apply_tax_rules
+from database import supabase_admin
 from fastapi.responses import FileResponse
 from models.storage import (
     get_settings,
@@ -23,7 +25,10 @@ UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @router.get("/image/{filename}")
-async def get_receipt_image(filename: str):
+async def get_receipt_image(
+    filename: str,
+    current_user=Depends(get_current_user)
+):
 
     file_path = os.path.join(
         UPLOAD_FOLDER,
@@ -34,7 +39,10 @@ async def get_receipt_image(filename: str):
 
 
 @router.post("/upload")
-async def upload_receipt(file: UploadFile = File(...)):
+async def upload_receipt(
+    file: UploadFile = File(...),
+    current_user=Depends(get_current_user)
+):
 
     file_extension = os.path.splitext(file.filename)[1]
 
@@ -76,6 +84,8 @@ async def upload_receipt(file: UploadFile = File(...)):
     print("DEBUG IRS DATA:", irs_data)
 
     receipt_record = {
+
+        "user_id": str(current_user.id),
 
         "id": str(uuid.uuid4()),
 
@@ -266,9 +276,19 @@ async def upload_receipt(file: UploadFile = File(...)):
     }
 
 @router.get("/all")
-async def get_all_receipts():
+async def get_all_receipts(
+    current_user=Depends(get_current_user)
+):
 
-    return get_receipts()
+    response = (
+        supabase_admin
+        .table("receipts")
+        .select("*")
+        .eq("user_id", str(current_user.id))
+        .execute()
+    )
+
+    return response.data
 
 
 # =====================================
@@ -278,15 +298,15 @@ async def get_all_receipts():
 
 @router.put("/update/{receipt_id}")
 async def update_receipt(
-
     receipt_id: str,
-
-    updated_data: dict = Body(...)
+    updated_data: dict = Body(...),
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()
 
     for r in receipts:
+
 
         if r["id"] == receipt_id:
 
@@ -368,7 +388,8 @@ async def update_receipt(
 @router.put("/notes/{receipt_id}")
 async def save_receipt_note(
     receipt_id: str,
-    data: dict = Body(...)
+    data: dict = Body(...),
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()
@@ -396,7 +417,8 @@ async def save_receipt_note(
 
 @router.put("/approve/{receipt_id}")
 async def approve_receipt(
-    receipt_id: str
+    receipt_id: str,
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()
@@ -431,7 +453,8 @@ async def approve_receipt(
 
 @router.put("/approve-duplicate/{receipt_id}")
 async def approve_duplicate(
-    receipt_id: str
+    receipt_id: str,
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()
@@ -466,7 +489,8 @@ async def approve_duplicate(
 
 @router.put("/mark-duplicate/{receipt_id}")
 async def mark_duplicate(
-    receipt_id: str
+    receipt_id: str,
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()
@@ -497,7 +521,10 @@ async def mark_duplicate(
     return {"success": True}
 
 @router.put("/reject/{receipt_id}")
-async def reject_receipt(receipt_id: str):
+async def reject_receipt(
+    receipt_id: str,
+    current_user=Depends(get_current_user)
+):
 
     receipts = get_receipts()
 
@@ -527,7 +554,8 @@ async def reject_receipt(receipt_id: str):
 
 @router.delete("/{receipt_id}")
 async def delete_receipt(
-    receipt_id: str
+    receipt_id: str,
+    current_user=Depends(get_current_user)
 ):
 
     receipts = get_receipts()

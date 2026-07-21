@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import FileResponse
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from models.storage import get_receipts
 import csv
 import os
@@ -20,7 +22,9 @@ def safe_amount(value):
 # EXPORT TAX REPORT
 # =====================================
 @router.get("/tax-report")
-def generate_tax_report():
+def generate_tax_report(
+    current_user=Depends(get_current_user)
+):
 
     receipts = get_receipts()
 
@@ -84,7 +88,9 @@ def generate_tax_report():
 # DASHBOARD ANALYTICS
 # =====================================
 @router.get("/analytics")
-def dashboard_analytics():
+def dashboard_analytics(
+    current_user=Depends(get_current_user)
+):
 
     receipts = get_receipts()
 

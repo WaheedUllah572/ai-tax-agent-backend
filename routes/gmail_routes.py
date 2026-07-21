@@ -6,7 +6,8 @@ import secrets
 from dotenv import load_dotenv
 import uuid
 from datetime import datetime
-
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from gmail_utils import save_tokens, load_tokens, scan_receipts_by_year
 from models.storage import (
     get_receipts,
@@ -25,7 +26,9 @@ GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_REDIRECT_URI")
 
 
 @router.get("/connect")
-async def gmail_connect():
+async def gmail_connect(
+    current_user=Depends(get_current_user)
+):
     state = secrets.token_urlsafe(16)
     scope = "https://www.googleapis.com/auth/gmail.readonly"
 
@@ -44,7 +47,10 @@ async def gmail_connect():
 
 
 @router.get("/callback")
-async def gmail_callback(request: Request):
+async def gmail_callback(
+    request: Request,
+    current_user=Depends(get_current_user)
+):
     code = request.query_params.get("code")
 
     if not code:
@@ -75,7 +81,9 @@ async def gmail_callback(request: Request):
 
 
 @router.get("/status")
-async def gmail_status():
+async def gmail_status(
+    current_user=Depends(get_current_user)
+):
     tokens = load_tokens()
 
     return {
@@ -85,7 +93,9 @@ async def gmail_status():
 
 
 @router.get("/scan")
-async def gmail_scan():
+async def gmail_scan(
+    current_user=Depends(get_current_user)
+):
 
     current_year = datetime.utcnow().year
     years = [current_year - i for i in range(5)]

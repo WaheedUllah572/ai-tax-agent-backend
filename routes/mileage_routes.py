@@ -2,7 +2,8 @@ from fastapi import APIRouter
 from datetime import datetime
 import uuid
 from typing import Optional, Dict
-
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 from models.storage import get_mileage, save_mileage
 
 router = APIRouter(prefix="/mileage", tags=["Mileage"])
@@ -105,14 +106,19 @@ def stop_mileage_tracking():
 
 
 @router.post("/start")
-async def start_mileage(meta: Dict = {}):
+async def start_mileage(
+    meta: Dict = {},
+    current_user=Depends(get_current_user)
+):
     if not start_mileage_tracking(meta):
         return {"error": "Mileage already running"}
     return {"status": "Mileage tracking started"}
 
 
 @router.post("/stop")
-async def stop_mileage():
+async def stop_mileage(
+    current_user=Depends(get_current_user)
+):
     result = stop_mileage_tracking()
     if not result:
         return {"error": "No active trip"}
@@ -120,5 +126,7 @@ async def stop_mileage():
 
 
 @router.get("/history")
-async def get_trip_history():
+async def get_trip_history(
+    current_user=Depends(get_current_user)
+):
     return get_mileage()

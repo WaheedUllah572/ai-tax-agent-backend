@@ -1,13 +1,17 @@
 from fastapi import APIRouter, Body
 from models.storage import get_settings, save_settings
-
+from fastapi import Depends
+from dependencies.auth_dependency import get_current_user
 router = APIRouter(
     prefix="/onboarding",
     tags=["Onboarding"]
 )
 
 @router.post("/setup")
-async def setup_business(data: dict = Body(...)):
+async def setup_business(
+    data: dict = Body(...),
+    current_user=Depends(get_current_user)
+):
 
     settings = get_settings()
 
@@ -26,5 +30,7 @@ async def setup_business(data: dict = Body(...)):
 
 
 @router.get("/profile")
-async def get_profile():
+async def get_profile(
+    current_user=Depends(get_current_user)
+):
     return get_settings()

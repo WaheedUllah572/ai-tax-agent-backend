@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from dependencies.auth_dependency import get_current_user
 from pydantic import BaseModel
 from supabase import create_client
 from dotenv import load_dotenv
@@ -209,3 +210,16 @@ def login(data: LoginModel):
             status_code=400,
             detail="Invalid email or password"
         )
+    
+    # =====================================================
+# CURRENT AUTHENTICATED USER
+# =====================================================
+
+@router.get("/me")
+def get_me(current_user=Depends(get_current_user)):
+
+    return {
+        "authenticated": True,
+        "user_id": str(current_user.id),
+        "email": current_user.email,
+    }
