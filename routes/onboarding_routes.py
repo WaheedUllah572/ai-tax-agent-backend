@@ -18,6 +18,7 @@ async def setup_business(
     settings["business_name"] = data.get("business_name")
     settings["business_type"] = data.get("business_type")
     settings["timezone"] = data.get("timezone")
+    settings["country"] = data.get("country", "United States")
     settings["account_count"] = data.get("account_count", 1)
     settings["onboarding_completed"] = True
 
