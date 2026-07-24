@@ -1,7 +1,7 @@
 import json
 import os
 
-from database import supabase
+from database import supabase, supabase_admin
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 CLIENT_FILE = os.path.join(BASE_DIR, "clients.json")
@@ -39,7 +39,7 @@ def save_data(file_path, data):
 def get_receipts():
 
     response = (
-        supabase
+        supabase_admin
         .table("receipts")
         .select("*")
         .execute()
@@ -50,13 +50,13 @@ def get_receipts():
 
 def save_receipts(data):
 
-    supabase.table("receipts").delete().neq(
+    supabase_admin.table("receipts").delete().neq(
         "id",
         "00000000-0000-0000-0000-000000000000"
     ).execute()
 
     if data:
-        supabase.table("receipts").insert(data).execute()
+        supabase_admin.table("receipts").insert(data).execute()
 
 
 # =====================================
