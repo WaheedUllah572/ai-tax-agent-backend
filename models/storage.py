@@ -50,7 +50,10 @@ def get_receipts():
 
 def save_receipts(data):
 
-    supabase.table("receipts").delete().neq("id", "").execute()
+    supabase.table("receipts").delete().neq(
+        "id",
+        "00000000-0000-0000-0000-000000000000"
+    ).execute()
 
     if data:
         supabase.table("receipts").insert(data).execute()
