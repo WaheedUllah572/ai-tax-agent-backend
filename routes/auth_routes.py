@@ -54,6 +54,9 @@ class LoginModel(BaseModel):
     email: str
     password: str
 
+class RefreshTokenModel(BaseModel):
+    refresh_token: str
+
 
 # =====================================================
 # REGISTER BUSINESS OWNER
@@ -209,6 +212,43 @@ def login(data: LoginModel):
         raise HTTPException(
             status_code=400,
             detail="Invalid email or password"
+        )
+    
+    # =====================================================
+# REFRESH ACCESS TOKEN
+# =====================================================
+
+@router.post("/refresh")
+def refresh_access_token(data: RefreshTokenModel):
+
+    try:
+        response = supabase.auth.refresh_session(
+            data.refresh_token
+        )
+
+        session = response.session
+
+        if not session:
+            raise HTTPException(
+                status_code=401,
+                detail="Unable to refresh session"
+            )
+
+        return {
+            "success": True,
+            "access_token": session.access_token,
+            "refresh_token": session.refresh_token,
+        }
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        print("TOKEN REFRESH ERROR:", str(e))
+
+        raise HTTPException(
+            status_code=401,
+            detail="Session expired. Please login again."
         )
     
     # =====================================================
