@@ -63,21 +63,14 @@ app.mount(
 # PERMANENT PRODUCTION CORS FIX
 # =====================================
 app.add_middleware(
-
     CORSMiddleware,
-
-    # LOCALHOST FOR DEVELOPMENT
     allow_origins=[
-        "http://localhost:3000"
+        "http://localhost:3000",
+        "https://ai-tax-agent-frontend-qq4cnpmld-waheed-ullahs-projects-0b4cca03.vercel.app",
     ],
-
-    # ALLOW ALL VERCEL DEPLOYMENTS
-    allow_origin_regex=r"https://.*\.vercel\.app",
-
+    allow_origin_regex=r"https://.*\.vercel\.app$",
     allow_credentials=True,
-
     allow_methods=["*"],
-
     allow_headers=["*"],
 )
 
