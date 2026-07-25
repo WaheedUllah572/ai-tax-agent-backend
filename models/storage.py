@@ -49,14 +49,14 @@ def get_receipts():
 
 
 def save_receipts(data):
+    if not data:
+        return
 
-    supabase_admin.table("receipts").delete().neq(
-        "id",
-        "00000000-0000-0000-0000-000000000000"
-    ).execute()
-
-    if data:
-        supabase_admin.table("receipts").insert(data).execute()
+    for receipt in data:
+        supabase_admin.table("receipts").upsert(
+            receipt,
+            on_conflict="id"
+        ).execute()
 
 
 # =====================================
