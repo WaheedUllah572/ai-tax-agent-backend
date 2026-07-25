@@ -133,9 +133,39 @@ def xero_create_bill(receipt: dict):
         headers=headers
     )
 
+    # Access token expired -> refresh it and retry once
+    if res.status_code == 401:
+
+        print("XERO TOKEN EXPIRED - REFRESHING")
+
+        new_tokens = refresh_xero_token()
+
+        if not new_tokens:
+            print("XERO TOKEN REFRESH FAILED")
+            return False
+
+        headers = get_headers()
+
+        if not headers:
+            return False
+
+        res = requests.post(
+            url,
+            json=payload,
+            headers=headers
+        )
+
     if res.status_code not in (200, 201):
-        print("XERO CREATE BILL ERROR:", res.text)
+
+        print(
+            "XERO CREATE BILL ERROR:",
+            res.status_code,
+            res.text
+        )
+
         return False
+
+    print("XERO BILL CREATED SUCCESSFULLY")
 
     return True
 
