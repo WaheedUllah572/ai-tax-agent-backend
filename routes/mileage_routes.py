@@ -199,7 +199,34 @@ async def stop_mileage(
         }
 
     return result
+# =========================================================
+# ACTIVE TRIP STATUS
+# =========================================================
 
+@router.get("/active")
+async def get_active_trip(
+    current_user=Depends(get_current_user)
+):
+    trip = ACTIVE_TRIPS.get("current")
+
+    if not trip:
+        return {
+            "active": False
+        }
+
+    meta = trip.get("meta", {})
+
+    return {
+        "active": True,
+        "status": trip.get("status", "In Progress"),
+        "start_time": trip["start_time"].isoformat(),
+        "start_location": meta.get("start_location"),
+        "destination": meta.get("destination"),
+        "business_name": meta.get("business_name"),
+        "client_name": meta.get("client_name"),
+        "meeting_with": meta.get("meeting_with"),
+        "purpose": meta.get("purpose") or "Business meeting"
+    }
 
 # =========================================================
 # MANUAL TRIP
