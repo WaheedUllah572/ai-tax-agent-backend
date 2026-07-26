@@ -5,7 +5,7 @@ import requests
 import secrets
 from dotenv import load_dotenv
 from supabase import create_client
-
+from datetime import datetime, timedelta
 load_dotenv()
 
 router = APIRouter(prefix="/xero", tags=["Xero"])
@@ -110,12 +110,31 @@ def xero_create_bill(receipt: dict):
 
     url = "https://api.xero.com/api.xro/2.0/Invoices"
 
+    # Get receipt date and calculate due date
+    receipt_date = receipt.get("date")
+
+    if receipt_date:
+        try:
+            parsed_date = datetime.strptime(receipt_date, "%Y-%m-%d")
+        except ValueError:
+            parsed_date = datetime.utcnow()
+    else:
+        parsed_date = datetime.utcnow()
+
+    due_date = parsed_date + timedelta(days=30)
+
+    # Create Xero bill
     payload = {
         "Type": "ACCPAY",
+
         "Contact": {
             "Name": receipt.get("vendor", "Unknown Vendor")
         },
-        "Date": receipt.get("date"),
+
+        "Date": parsed_date.strftime("%Y-%m-%d"),
+
+        "DueDate": due_date.strftime("%Y-%m-%d"),
+
         "LineItems": [
             {
                 "Description": receipt.get("category", "Expense"),
@@ -124,16 +143,18 @@ def xero_create_bill(receipt: dict):
                 "AccountCode": "400"
             }
         ],
+
         "Status": "AUTHORISED"
     }
 
+    # First attempt
     res = requests.post(
         url,
         json=payload,
         headers=headers
     )
 
-    # Access token expired -> refresh it and retry once
+    # If Xero access token expired, refresh and retry once
     if res.status_code == 401:
 
         print("XERO TOKEN EXPIRED - REFRESHING")
@@ -155,6 +176,7 @@ def xero_create_bill(receipt: dict):
             headers=headers
         )
 
+    # Check Xero response
     if res.status_code not in (200, 201):
 
         print(
