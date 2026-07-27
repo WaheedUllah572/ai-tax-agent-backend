@@ -279,16 +279,14 @@ async def upload_receipt(
 async def get_all_receipts(
     current_user=Depends(get_current_user)
 ):
+    receipts = get_receipts()
 
-    response = (
-        supabase_admin
-        .table("receipts")
-        .select("*")
-        .eq("user_id", str(current_user.id))
-        .execute()
-    )
+    user_receipts = [
+        r for r in receipts
+        if str(r.get("user_id")) == str(current_user.id)
+    ]
 
-    return response.data
+    return user_receipts
 
 
 # =====================================

@@ -51,7 +51,7 @@ def start_mileage_tracking(trip_meta: Optional[Dict] = None):
         return False
 
     ACTIVE_TRIPS["current"] = {
-        "start_time": datetime.utcnow(),
+        "start_time": datetime.now(timezone.utc),
         "status": "In Progress",
         "created_by": "Max AI",
         "meta": trip_meta or {}
@@ -67,7 +67,7 @@ def stop_mileage_tracking():
     if not trip:
         return None
 
-    end_time = datetime.utcnow()
+    end_time = datetime.now(timezone.utc)
 
     duration_minutes = (
         end_time - trip["start_time"]
