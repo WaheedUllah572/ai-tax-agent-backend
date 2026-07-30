@@ -257,100 +257,39 @@ def generate_reply(
     intent = detect_intent(msg)
 
     if intent == "start_mileage":
-     entities = extract_trip_entities(msg)
 
-    destination = entities.get("destination")
-    client_name = entities.get("client_name")
-    purpose = entities.get("purpose")
-
-    # Check Joyce's required mileage fields
-    missing = []
-
-    if not destination:
-        missing.append("destination")
-
-    if not client_name:
-        missing.append("who you're meeting")
-
-    if not purpose:
-        missing.append("business purpose")
-
-    # Do not start an incomplete trip
-    if missing:
-        return (
-            "Before I start mileage tracking, I still need "
-            + ", ".join(missing)
-            + ". Please say the complete trip, for example: "
-            "'Hey Max, begin trip to Outriggers to meet Mike "
-            "about plumbing for the restaurant.'"
-        )
-
-    # Start mileage immediately
-    if not start_mileage_tracking(trip_meta=entities):
-        return (
-            "⚠️ Mileage tracking is already running. "
-            "Say 'Hey Max, stop trip' to finish the current trip."
-        )
-
-    session["trip_details"] = entities
-    session["pending_trip_confirmation"] = None
-    session["awaiting_trip_edit"] = False
-
-    return (
-        "✅ Mileage tracking has started.\n\n"
-        f"📍 Destination: {destination}\n"
-        f"👤 Meeting With: {client_name}\n"
-        f"📝 Business Purpose: {purpose}\n\n"
-        "I'm now tracking your business trip. "
-        "When you arrive, say 'Hey Max, stop trip'."
-    )
-
-    if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
-        session["awaiting_trip_edit"] = True
-        return (
-            "Please tell me the corrected trip.\n\n"
-            "Example:\n"
-            "I'm driving to ABC Plumbing to meet John about tax planning."
-        )
-
-    if session.get("awaiting_trip_edit"):
         entities = extract_trip_entities(msg)
-        if (
-            entities.get("destination")
-            and entities.get("client_name")
-            and entities.get("purpose")
-        ):
-            session["pending_trip_confirmation"] = entities
-            session["awaiting_trip_edit"] = False
+
+        destination = entities.get("destination")
+        client_name = entities.get("client_name")
+        purpose = entities.get("purpose")
+
+        # Check Joyce's required mileage fields
+        missing = []
+
+        if not destination:
+            missing.append("destination")
+
+        if not client_name:
+            missing.append("who you're meeting")
+
+        if not purpose:
+            missing.append("business purpose")
+
+        if missing:
             return (
-                "🚗 Updated trip detected.\n\n"
-                f"📍 Destination: {entities['destination']}\n"
-                f"👤 Meeting: {entities['client_name']}\n"
-                f"📝 Purpose: {entities['purpose']}\n\n"
-                "Click CONFIRM to start mileage or EDIT to modify."
-            )
-
-        return (
-            "⚠️ I couldn't identify all required trip details.\n\n"
-            "Please provide the destination, who you are meeting, and the business purpose.\n\n"
-            "Example: I'm driving to ABC Plumbing to meet John about tax planning."
-        )
-
-    if msg.lower() == "confirm" and session.get("pending_trip_confirmation"):
-        entities = session["pending_trip_confirmation"]
-
-        if (
-            not entities.get("destination")
-            or not entities.get("client_name")
-            or not entities.get("purpose")
-        ):
-            return (
-                "⚠️ Trip details are incomplete.\n\n"
-                "Please click EDIT and enter the complete trip before confirming."
+                "Before I start mileage tracking, I still need "
+                + ", ".join(missing)
+                + ". Please say the complete trip, for example: "
+                "'Hey Max, begin trip to Outriggers to meet Mike "
+                "about plumbing for the restaurant.'"
             )
 
         if not start_mileage_tracking(trip_meta=entities):
-            return "⚠️ Mileage tracking is already running."
+            return (
+                "⚠️ Mileage tracking is already running. "
+                "Say 'Hey Max, stop trip' to finish the current trip."
+            )
 
         session["trip_details"] = entities
         session["pending_trip_confirmation"] = None
@@ -358,11 +297,11 @@ def generate_reply(
 
         return (
             "✅ Mileage tracking has started.\n\n"
-            f"📍 Destination: {entities['destination']}\n"
-            f"👤 Meeting: {entities['client_name']}\n"
-            f"📝 Purpose: {entities['purpose']}\n\n"
-            "I'm now tracking your business trip.\n\n"
-            "When you arrive, simply type 'Stop mileage'."
+            f"📍 Destination: {destination}\n"
+            f"👤 Meeting With: {client_name}\n"
+            f"📝 Business Purpose: {purpose}\n\n"
+            "I'm now tracking your business trip. "
+            "When you arrive, say 'Hey Max, stop trip'."
         )
 
     if intent == "stop_mileage":
