@@ -257,16 +257,53 @@ def generate_reply(
     intent = detect_intent(msg)
 
     if intent == "start_mileage":
-        entities = extract_trip_entities(msg)
-        session["pending_trip_confirmation"] = entities
+     entities = extract_trip_entities(msg)
+
+    destination = entities.get("destination")
+    client_name = entities.get("client_name")
+    purpose = entities.get("purpose")
+
+    # Check Joyce's required mileage fields
+    missing = []
+
+    if not destination:
+        missing.append("destination")
+
+    if not client_name:
+        missing.append("who you're meeting")
+
+    if not purpose:
+        missing.append("business purpose")
+
+    # Do not start an incomplete trip
+    if missing:
         return (
-            "🚗 I found the following trip information:\n\n"
-            f"📍 Destination: {entities.get('destination') or 'Not specified'}\n"
-            f"👤 Meeting With: {entities.get('client_name') or 'Not specified'}\n"
-            f"📝 Purpose: {entities.get('purpose') or 'Not specified'}\n\n"
-            "Please review your trip before tracking begins.\n\n"
-            "Click CONFIRM to start mileage or EDIT to make changes."
+            "Before I start mileage tracking, I still need "
+            + ", ".join(missing)
+            + ". Please say the complete trip, for example: "
+            "'Hey Max, begin trip to Outriggers to meet Mike "
+            "about plumbing for the restaurant.'"
         )
+
+    # Start mileage immediately
+    if not start_mileage_tracking(trip_meta=entities):
+        return (
+            "⚠️ Mileage tracking is already running. "
+            "Say 'Hey Max, stop trip' to finish the current trip."
+        )
+
+    session["trip_details"] = entities
+    session["pending_trip_confirmation"] = None
+    session["awaiting_trip_edit"] = False
+
+    return (
+        "✅ Mileage tracking has started.\n\n"
+        f"📍 Destination: {destination}\n"
+        f"👤 Meeting With: {client_name}\n"
+        f"📝 Business Purpose: {purpose}\n\n"
+        "I'm now tracking your business trip. "
+        "When you arrive, say 'Hey Max, stop trip'."
+    )
 
     if msg.lower() == "edit" and session.get("pending_trip_confirmation"):
         session["awaiting_trip_edit"] = True
