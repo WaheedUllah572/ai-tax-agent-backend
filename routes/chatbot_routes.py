@@ -1,3 +1,4 @@
+import json
 from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Dict, Optional
@@ -43,6 +44,49 @@ def create_new_session():
         "awaiting_trip_edit": False,
     }
 
+def extract_trip_entities_ai(msg: str) -> Dict:
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        temperature=0,
+        response_format={"type": "json_object"},
+        messages=[
+            {
+                "role": "system",
+                "content": """
+Extract business trip information.
+
+Return ONLY JSON.
+
+{
+    "destination": null,
+    "client_name": null,
+    "purpose": null
+}
+
+Do not return markdown.
+Do not explain anything.
+"""
+            },
+            {
+                "role": "user",
+                "content": msg
+            }
+        ]
+    )
+
+    data = json.loads(response.choices[0].message.content)
+
+    return {
+        "destination": data.get("destination"),
+        "client_name": data.get("client_name"),
+        "purpose": data.get("purpose"),
+        "start_location": "Current Location",
+        "business_name": data.get("destination"),
+        "meeting_with": data.get("client_name"),
+        "notes": None,
+    }
+
 
 def get_session(session_id: str) -> Dict:
     if session_id not in SESSIONS:
@@ -54,46 +98,64 @@ def get_session(session_id: str) -> Dict:
 # 🧠 INTENT ENGINE
 # =====================================================
 def detect_intent(msg: str) -> Optional[str]:
-    msg = msg.lower()
+    msg = msg.lower().strip()
 
-    start_keywords = [
-    "start mileage",
-    "start mile",
-    "start trip",
-    "start tracking",
-    "begin trip",
-    "begin mileage",
-    "driving",
-    "i am driving",
-    "i'm driving",
-]
+    start_patterns = [
+        "start mileage",
+        "start trip",
+        "start a trip",
+        "begin trip",
+        "begin a trip",
+        "begin mileage",
+        "track mileage",
+        "track this trip",
+        "start tracking",
+        "i'm driving",
+        "i am driving",
+        "driving to",
+        "heading to",
+        "headed to",
+        "going to",
+        "i'm going to",
+        "i am going to",
+        "on my way",
+        "leaving for",
+        "leave for",
+    ]
 
-    stop_keywords = [
-        "arrived",
-        "trip finished",
+    stop_patterns = [
         "stop trip",
         "stop mileage",
         "end trip",
+        "finish trip",
+        "trip finished",
+        "arrived",
+        "i'm here",
+        "i am here",
+        "finished driving",
+        "done driving",
     ]
 
-    schedule_keywords = [
-    "schedule",
-    "book meeting",
-    "create meeting",
-    "set appointment"
-]
+    schedule_patterns = [
+        "schedule",
+        "book meeting",
+        "create meeting",
+        "set appointment",
+    ]
 
-    if any(k in msg for k in start_keywords):
-        return "start_mileage"
+    for p in start_patterns:
+        if p in msg:
+            return "start_mileage"
 
-    if any(k in msg for k in stop_keywords):
-        return "stop_mileage"
-    
-    if any(k in msg for k in schedule_keywords):
-     return "schedule_meeting"
+    for p in stop_patterns:
+        if p in msg:
+            return "stop_mileage"
+
+    for p in schedule_patterns:
+        if p in msg:
+            return "schedule_meeting"
 
     return None
-
 
 # =====================================================
 # 🧠 SAFE ENTITY EXTRACTION
@@ -258,7 +320,7 @@ def generate_reply(
 
     if intent == "start_mileage":
 
-        entities = extract_trip_entities(msg)
+        entities = extract_trip_entities_ai(msg)
 
         destination = entities.get("destination")
         client_name = entities.get("client_name")
