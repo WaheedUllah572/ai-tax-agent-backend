@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
 from pydantic import BaseModel
 from typing import Dict, Optional
 from enum import Enum
@@ -429,4 +429,17 @@ async def chat(
     return {
         "reply": reply,
         "context": session
+    }
+
+@router.post("/transcribe")
+async def transcribe(audio: UploadFile = File(...)):
+    audio_bytes = await audio.read()
+
+    transcript = client.audio.transcriptions.create(
+        model="gpt-4o-mini-transcribe",
+        file=(audio.filename, audio_bytes, audio.content_type),
+    )
+
+    return {
+        "text": transcript.text
     }
