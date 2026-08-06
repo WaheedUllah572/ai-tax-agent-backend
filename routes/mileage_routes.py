@@ -27,6 +27,9 @@ class ManualTripRequest(BaseModel):
     miles: float
     method: Optional[str] = "manual"
 
+class EditMileageRequest(BaseModel):
+    miles: float
+
 
 # =========================================================
 # HELPERS
@@ -565,6 +568,60 @@ async def dismiss_mileage_reminder(
     return {
         "success": True
     }
+
+# =========================================================
+# EDIT MILEAGE
+# =========================================================
+
+@router.put("/edit/{trip_id}")
+async def edit_mileage(
+    trip_id: str,
+    data: EditMileageRequest,
+    current_user=Depends(get_current_user)
+):
+
+    history = get_mileage()
+
+    for trip in history:
+
+        if trip.get("trip_id") == trip_id:
+
+            miles = round(float(data.miles), 2)
+
+            trip["total_miles"] = miles
+            trip["distance_miles"] = miles
+
+            trip["deductible_amount"] = round(
+                miles * IRS_MILEAGE_RATE,
+                2
+            )
+
+            trip["manually_edited"] = True
+
+            trip.setdefault(
+                "audit_log",
+                []
+            ).append({
+
+                "action": "mileage_edited",
+
+                "by": "User",
+
+                "date": datetime.utcnow().isoformat()
+
+            })
+
+            save_mileage(history)
+
+            return {
+                "success": True,
+                "trip": trip
+            }
+
+    raise HTTPException(
+        status_code=404,
+        detail="Trip not found"
+    )
 
 
 # =========================================================
