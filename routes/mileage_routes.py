@@ -156,7 +156,12 @@ def stop_mileage_tracking():
 
     history.append(trip_record)
 
+    print("========== SAVING MILEAGE ==========")
+    print(history)
+
     save_mileage(history)
+
+    print("========== SAVE COMPLETE ==========")
 
     ACTIVE_TRIPS["current"] = None
 
