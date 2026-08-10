@@ -68,6 +68,20 @@ async def update_settings(
         settings.get("xero_connected", False)
     )
 
+    # =====================================
+# MULTI BUSINESS SUPPORT
+# =====================================
+
+    settings["businesses"] = data.get(
+    "businesses",
+    settings.get("businesses", [])
+)
+
+    settings["default_business"] = data.get(
+    "default_business",
+    settings.get("default_business", None)
+)
+
     save_settings(settings)
 
     return {
