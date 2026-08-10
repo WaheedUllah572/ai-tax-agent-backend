@@ -433,13 +433,22 @@ async def chat(
 
 @router.post("/transcribe")
 async def transcribe(audio: UploadFile = File(...)):
-    audio_bytes = await audio.read()
+    try:
+        audio_bytes = await audio.read()
 
-    transcript = client.audio.transcriptions.create(
-        model="gpt-4o-mini-transcribe",
-        file=(audio.filename, audio_bytes, audio.content_type),
-    )
+        print("Filename:", audio.filename)
+        print("Content-Type:", audio.content_type)
+        print("Size:", len(audio_bytes))
 
-    return {
-        "text": transcript.text
-    }
+        transcript = client.audio.transcriptions.create(
+            model="gpt-4o-mini-transcribe",
+            file=(audio.filename, audio_bytes, audio.content_type),
+        )
+
+        return {
+            "text": transcript.text
+        }
+
+    except Exception as e:
+        print("TRANSCRIBE ERROR:", e)
+        raise
