@@ -20,6 +20,15 @@ from services.currency_service import convert_to_usd
 from routes.xero_routes import xero_create_bill
 
 router = APIRouter(prefix="/receipts", tags=["Receipts"])
+def get_user_receipt(receipts, receipt_id, user_id):
+    for receipt in receipts:
+        if (
+            str(receipt.get("id")) == str(receipt_id)
+            and str(receipt.get("user_id")) == str(user_id)
+        ):
+            return receipt
+
+    return None
 
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -30,10 +39,33 @@ async def get_receipt_image(
     current_user=Depends(get_current_user)
 ):
 
+    receipts = get_receipts()
+
+    receipt = next(
+        (
+            r for r in receipts
+            if r.get("filename") == filename
+            and str(r.get("user_id")) == str(current_user.id)
+        ),
+        None
+    )
+
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
+
     file_path = os.path.join(
         UPLOAD_FOLDER,
         filename
     )
+
+    if not os.path.isfile(file_path):
+        return {
+            "success": False,
+            "message": "Receipt image not found."
+        }
 
     return FileResponse(file_path)
 
@@ -217,33 +249,27 @@ async def upload_receipt(
 
     receipts = get_receipts()
 
-    # =====================================
+        # =====================================
     # DUPLICATE DETECTION
     # =====================================
     possible_duplicate = None
 
     for existing in receipts:
 
+        # Only compare receipts belonging to the same user
+        if str(existing.get("user_id")) != str(current_user.id):
+            continue
+
         if (
-
             str(existing.get("vendor", "")).lower().strip()
-            ==
-            str(receipt_record.get("vendor", "")).lower().strip()
-
+            == str(receipt_record.get("vendor", "")).lower().strip()
             and
-
             float(existing.get("amount", 0))
-            ==
-            float(receipt_record.get("amount", 0))
-
+            == float(receipt_record.get("amount", 0))
             and
-
             str(existing.get("date", "")).strip()
-            ==
-            str(receipt_record.get("date", "")).strip()
-
+            == str(receipt_record.get("date", "")).strip()
         ):
-
             possible_duplicate = existing["id"]
             break
 
@@ -303,85 +329,74 @@ async def update_receipt(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-        if r["id"] == receipt_id:
+    if receipt.get("locked", False):
+        return {
+            "success": False,
+            "message": "Receipt is locked and cannot be edited."
+        }
 
-            if r.get("locked", False):
+    receipt["vendor"] = (
+        updated_data.get(
+            "vendor",
+            receipt.get("vendor", "")
+        )
+        .lower()
+        .strip()
+    )
 
-                return {
-                    "success": False,
-                    "message":
-                    "Receipt is locked and cannot be edited."
-                }
+    receipt["amount"] = updated_data.get(
+        "amount",
+        receipt.get("amount")
+    )
 
-            r["vendor"] = (
-                updated_data.get(
-                    "vendor",
-                    r["vendor"]
-                )
-                .lower()
-                .strip()
-            )
+    receipt["category"] = updated_data.get(
+        "category",
+        receipt.get("category")
+    )
 
-            r["amount"] = (
-                updated_data.get(
-                    "amount",
-                    r["amount"]
-                )
-            )
+    # Keep deduction synced with category
+    receipt["deduction_type"] = receipt["category"]
 
-            r["category"] = (
-                updated_data.get(
-                    "category",
-                    r["category"]
-                )
-            )
+    receipt["date"] = updated_data.get(
+        "date",
+        receipt.get("date")
+    )
 
-            # Keep deduction synced with category
-            r["deduction_type"] = r["category"]
+    save_vendor_correction(
+        receipt["vendor"],
+        receipt["category"],
+        receipt["category"]
+    )
 
-            r["date"] = (
-                updated_data.get(
-                    "date",
-                    r["date"]
-                )
-            )
+    receipt["vendor_learned"] = True
+    receipt["manually_edited"] = True
+    receipt["needs_review"] = False
+    receipt["ai_confidence"] = "reviewed"
+    receipt["status"] = "Reviewed"
 
-            save_vendor_correction(
-
-                r["vendor"],
-
-                r["category"],
-
-                r["category"]
-            )
-
-            r["vendor_learned"] = True
-
-            r["manually_edited"] = True
-
-            r["needs_review"] = False
-
-            r["ai_confidence"] = "reviewed"
-
-            r["status"] = "Reviewed"
-
-            r["audit_log"].append({
-
-                "action": "manually_updated",
-
-                "by": "user",
-
-                "date":
-                    datetime.utcnow()
-                    .isoformat()
-            })
+    receipt.setdefault("audit_log", []).append({
+        "action": "manually_updated",
+        "by": "user",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
-    return {"success": True}
+    return {
+        "success": True
+    }
 
 @router.put("/notes/{receipt_id}")
 async def save_receipt_note(
@@ -392,19 +407,25 @@ async def save_receipt_note(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-        if r["id"] == receipt_id:
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-            r["accountant_note"] = data.get("note", "")
+    receipt["accountant_note"] = data.get("note", "")
 
-            r["audit_log"].append({
-                "action": "note_added",
-                "by": "accountant",
-                "date": datetime.utcnow().isoformat()
-            })
-
-            break
+    receipt.setdefault("audit_log", []).append({
+        "action": "note_added",
+        "by": "accountant",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
@@ -421,33 +442,37 @@ async def approve_receipt(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-        if r["id"] == receipt_id:
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-            r["status"] = "Locked"
-            r["locked"] = True
+    receipt["status"] = "Locked"
+    receipt["locked"] = True
 
-            success = xero_create_bill(r)
+    success = xero_create_bill(receipt)
 
-            if success:
+    if success:
+        receipt["xero_synced"] = True
 
-                r["xero_synced"] = True
-
-            r["audit_log"].append({
-
-                "action": "approved",
-
-                "by": "user",
-
-                "date":
-                    datetime.utcnow()
-                    .isoformat()
-            })
+    receipt.setdefault("audit_log", []).append({
+        "action": "approved",
+        "by": "user",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
-    return {"success": True}
+    return {
+        "success": True
+    }
 
 @router.put("/approve-duplicate/{receipt_id}")
 async def approve_duplicate(
@@ -457,32 +482,34 @@ async def approve_duplicate(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-        if r["id"] == receipt_id:
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-            r["status"] = "Locked"
+    receipt["status"] = "Locked"
+    receipt["locked"] = True
+    receipt["possible_duplicate"] = False
+    receipt["needs_review"] = False
 
-            r["locked"] = True
-
-            r["possible_duplicate"] = False
-
-            r["needs_review"] = False
-
-            r["audit_log"].append({
-
-                "action": "duplicate_approved",
-
-                "by": "user",
-
-                "date":
-                    datetime.utcnow()
-                    .isoformat()
-            })
+    receipt.setdefault("audit_log", []).append({
+        "action": "duplicate_approved",
+        "by": "user",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
-    return {"success": True}
+    return {
+        "success": True
+    }
 
 
 @router.put("/mark-duplicate/{receipt_id}")
@@ -493,30 +520,33 @@ async def mark_duplicate(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-        if r["id"] == receipt_id:
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-            r["status"] = "Duplicate"
+    receipt["status"] = "Duplicate"
+    receipt["possible_duplicate"] = False
+    receipt["needs_review"] = False
 
-            r["possible_duplicate"] = False
-
-            r["needs_review"] = False
-
-            r["audit_log"].append({
-
-                "action": "marked_duplicate",
-
-                "by": "user",
-
-                "date":
-                    datetime.utcnow()
-                    .isoformat()
-            })
+    receipt.setdefault("audit_log", []).append({
+        "action": "marked_duplicate",
+        "by": "user",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
-    return {"success": True}
+    return {
+        "success": True
+    }
 
 @router.put("/reject/{receipt_id}")
 async def reject_receipt(
@@ -526,23 +556,26 @@ async def reject_receipt(
 
     receipts = get_receipts()
 
-    for r in receipts:
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-        if r["id"] == receipt_id:
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-            r["status"] = "Rejected"
+    receipt["status"] = "Rejected"
+    receipt["locked"] = False
 
-            r["locked"] = False
-
-            r["audit_log"].append({
-
-                "action": "rejected",
-
-                "by": "accountant",
-
-                "date": datetime.utcnow().isoformat()
-
-            })
+    receipt.setdefault("audit_log", []).append({
+        "action": "rejected",
+        "by": "accountant",
+        "date": datetime.utcnow().isoformat()
+    })
 
     save_receipts(receipts)
 
@@ -558,34 +591,37 @@ async def delete_receipt(
 
     receipts = get_receipts()
 
-    new_receipts = []
+    receipt = get_user_receipt(
+        receipts,
+        receipt_id,
+        current_user.id
+    )
 
-    deleted_file = None
+    if not receipt:
+        return {
+            "success": False,
+            "message": "Receipt not found."
+        }
 
-    for r in receipts:
+    deleted_file = receipt.get("filename")
 
-        if r["id"] == receipt_id:
-
-            deleted_file = r["filename"]
-
-        else:
-
-            new_receipts.append(r)
+    new_receipts = [
+        r for r in receipts
+        if str(r.get("id")) != str(receipt_id)
+        or str(r.get("user_id")) != str(current_user.id)
+    ]
 
     if deleted_file:
-
         file_path = os.path.join(
             UPLOAD_FOLDER,
             deleted_file
         )
 
         if os.path.exists(file_path):
-
             os.remove(file_path)
 
     save_receipts(new_receipts)
 
     return {
-        "success": True,
-        "receipts": new_receipts
+        "success": True
     }
