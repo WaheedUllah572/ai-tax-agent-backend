@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Body
-from fastapi import Depends
+from fastapi import APIRouter, Body, Depends
 from dependencies.auth_dependency import get_current_user
 from models.storage import (
     get_settings,
@@ -16,8 +15,9 @@ router = APIRouter(
 async def get_user_settings(
     current_user=Depends(get_current_user)
 ):
+    user_id = str(current_user.id)
 
-    return get_settings()
+    return get_settings(user_id)
 
 
 @router.put("/")
@@ -25,8 +25,11 @@ async def update_settings(
     data: dict = Body(...),
     current_user=Depends(get_current_user)
 ):
+    user_id = str(current_user.id)
 
-    settings = get_settings()
+    settings = get_settings(user_id)
+
+    settings["user_id"] = user_id
 
     settings["jurisdiction"] = data.get(
         "jurisdiction",
@@ -44,9 +47,9 @@ async def update_settings(
     )
 
     settings["country"] = data.get(
-    "country",
-    settings.get("country", "United States")
-)
+        "country",
+        settings.get("country", "United States")
+    )
 
     settings["account_count"] = data.get(
         "account_count",
@@ -68,21 +71,17 @@ async def update_settings(
         settings.get("xero_connected", False)
     )
 
-    # =====================================
-# MULTI BUSINESS SUPPORT
-# =====================================
-
     settings["businesses"] = data.get(
-    "businesses",
-    settings.get("businesses", [])
-)
+        "businesses",
+        settings.get("businesses", [])
+    )
 
     settings["default_business"] = data.get(
-    "default_business",
-    settings.get("default_business", None)
-)
+        "default_business",
+        settings.get("default_business", None)
+    )
 
-    save_settings(settings)
+    save_settings(settings, user_id)
 
     return {
         "success": True,

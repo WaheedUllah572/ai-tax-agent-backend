@@ -1,4 +1,9 @@
-from models.storage import get_receipts, get_transactions, save_transactions, save_receipts
+from models.storage import (
+    get_receipts,
+    get_transactions,
+    save_transactions,
+    save_receipts,
+)
 from datetime import datetime
 import re
 
@@ -9,7 +14,7 @@ def clean_amount(a):
             a = a.replace(",", "")
             a = re.sub(r"[A-Za-zRs$€£ ]", "", a)
         return float(a)
-    except:
+    except Exception:
         return 0.0
 
 
@@ -23,7 +28,6 @@ def parse_date(date_str):
     if not date_str:
         return None
 
-    # Remove commas
     date_str = date_str.replace(",", "").strip()
 
     formats = [
@@ -32,23 +36,51 @@ def parse_date(date_str):
         "%B %d %Y",
         "%d-%m-%Y",
         "%d %m %Y",
-        "%d %b %Y"
+        "%d %b %Y",
     ]
 
     for fmt in formats:
         try:
             return datetime.strptime(date_str, fmt).date()
-        except:
+        except Exception:
             continue
 
     return None
 
 
-def match_transactions():
-    receipts = get_receipts()
-    transactions = get_transactions()
+def match_transactions(user_id):
+    """
+    Match transactions ONLY against receipts belonging to the
+    authenticated user.
 
-    for tx in transactions:
+    This function intentionally keeps the shared storage format
+    but isolates the matching operation by user_id.
+    """
+
+    user_id = str(user_id)
+
+    all_receipts = get_receipts()
+    all_transactions = get_transactions()
+
+    if not isinstance(all_receipts, list):
+        all_receipts = []
+
+    if not isinstance(all_transactions, list):
+        all_transactions = []
+
+    # IMPORTANT:
+    # Never allow records from another user into the matching operation.
+    user_transactions = [
+        tx for tx in all_transactions
+        if str(tx.get("user_id", "")) == user_id
+    ]
+
+    user_receipts = [
+        receipt for receipt in all_receipts
+        if str(receipt.get("user_id", "")) == user_id
+    ]
+
+    for tx in user_transactions:
         if tx.get("matched"):
             continue
 
@@ -61,24 +93,26 @@ def match_transactions():
         print("TX Amount:", tx_amount)
         print("TX Date:", tx_date)
 
-        for r in receipts:
-            if r.get("matched"):
+        for receipt in user_receipts:
+            if receipt.get("matched"):
                 continue
 
-            r_amount = clean_amount(r.get("amount"))
-            r_date = parse_date(r.get("date"))
-            r_vendor = normalize_vendor(r.get("vendor"))
+            receipt_amount = clean_amount(receipt.get("amount"))
+            receipt_date = parse_date(receipt.get("date"))
+            receipt_vendor = normalize_vendor(receipt.get("vendor"))
 
-            print("   Receipt Vendor:", r_vendor)
-            print("   Receipt Amount:", r_amount)
-            print("   Receipt Date:", r_date)
+            print("   Receipt Vendor:", receipt_vendor)
+            print("   Receipt Amount:", receipt_amount)
+            print("   Receipt Date:", receipt_date)
 
-            amount_match = abs(tx_amount - r_amount) < 1
-            vendor_match = tx_vendor == r_vendor
+            amount_match = abs(tx_amount - receipt_amount) < 1
+            vendor_match = tx_vendor == receipt_vendor
 
             date_match = False
-            if tx_date and r_date:
-                diff = abs((tx_date - r_date).days)
+
+            if tx_date and receipt_date:
+                diff = abs((tx_date - receipt_date).days)
+
                 if diff <= 1:
                     date_match = True
 
@@ -88,12 +122,46 @@ def match_transactions():
 
             if amount_match and vendor_match and date_match:
                 print(">>> MATCH FOUND <<<")
+
                 tx["matched"] = True
-                tx["receipt_id"] = r["id"]
-                r["matched"] = True
+                tx["receipt_id"] = receipt["id"]
+
+                receipt["matched"] = True
+
                 break
 
-    save_transactions(transactions)
-    save_receipts(receipts)
+    # Update ONLY the authenticated user's transactions in the
+    # complete transaction collection.
+    transaction_updates = {
+        tx["id"]: tx
+        for tx in user_transactions
+        if tx.get("id")
+    }
 
-    return transactions
+    for tx in all_transactions:
+        tx_id = tx.get("id")
+
+        if tx_id in transaction_updates:
+            tx.update(transaction_updates[tx_id])
+
+    save_transactions(all_transactions)
+
+    # Update ONLY the authenticated user's receipts.
+    receipt_updates = {
+        receipt["id"]: receipt
+        for receipt in user_receipts
+        if receipt.get("id")
+    }
+
+    receipts_to_save = []
+
+    for receipt in all_receipts:
+        receipt_id = receipt.get("id")
+
+        if receipt_id in receipt_updates:
+            receipts_to_save.append(receipt)
+
+    if receipts_to_save:
+        save_receipts(receipts_to_save)
+
+    return user_transactions

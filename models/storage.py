@@ -149,28 +149,79 @@ def save_vendor_correction(
 # SETTINGS
 # =====================================
 
-def get_settings():
+def get_settings(user_id=None):
 
     data = load_data(SETTINGS_FILE)
 
-    if not data:
+    default_settings = {
+        "jurisdiction": "US",
+        "country": "United States",
+        "onboarding_completed": False,
+        "business_name": "",
+        "business_type": "",
+        "account_count": 1,
+        "calendar_connected": False,
+        "gmail_connected": False,
+        "xero_connected": False,
+        "businesses": [],
+        "default_business": None,
+    }
+
+    if not isinstance(data, list):
+        data = []
+
+    # Find settings belonging to the authenticated user
+    if user_id:
+        user_id = str(user_id)
+
+        for settings in data:
+            if str(settings.get("user_id", "")) == user_id:
+                return settings
+
+        # No settings yet for this user
         return {
-    "jurisdiction": "US",
-    "country": "United States",
-    "onboarding_completed": False,
-    "business_name": "",
-    "business_type": "",
-}
+            **default_settings,
+            "user_id": user_id
+        }
 
-    return data
+    # Backward compatibility for internal callers
+    # Do not use this for authenticated user requests.
+    if not data:
+        return default_settings
+
+    return data[0]
 
 
-def save_settings(data):
+def save_settings(data, user_id=None):
 
-    save_data(
-        SETTINGS_FILE,
-        data
-    )
+    if not isinstance(data, dict):
+        return
+
+    if user_id:
+        user_id = str(user_id)
+        data["user_id"] = user_id
+
+    existing_data = load_data(SETTINGS_FILE)
+
+    if not isinstance(existing_data, list):
+        existing_data = []
+
+    if user_id:
+        updated = False
+
+        for index, settings in enumerate(existing_data):
+            if str(settings.get("user_id", "")) == user_id:
+                existing_data[index] = data
+                updated = True
+                break
+
+        if not updated:
+            existing_data.append(data)
+
+        save_data(SETTINGS_FILE, existing_data)
+
+    else:
+        save_data(SETTINGS_FILE, data)
 
     # =====================================
 # CLIENTS

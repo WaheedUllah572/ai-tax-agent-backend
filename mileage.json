@@ -1,0 +1,415 @@
+[
+  {
+    "trip_id": "9fd3e466-7ef0-4604-9d6a-79eab9cc8416",
+    "date": "2026-08-24",
+    "start_time": "2026-08-24T20:22:07.294863+00:00",
+    "end_time": "2026-08-24T20:40:20.778346+00:00",
+    "duration_minutes": 18.2,
+    "distance_miles": 9.11,
+    "total_miles": 9.11,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "Florida",
+    "business_name": "Florida",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": "Current Location",
+    "end_location": "Florida",
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.67,
+    "deductible_amount": 6.1,
+    "annual_miles_total": 9.11,
+    "method": "standard_mileage",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-24T20:40:20.784541"
+      }
+    ]
+  },
+  {
+    "trip_id": "b2fe574f-0981-427c-9a3f-4eced1138940",
+    "date": "2026-08-27",
+    "start_time": "2026-08-24T21:15:28.027720+00:00",
+    "end_time": "2026-08-27T19:37:47.051408+00:00",
+    "duration_minutes": 4222.3,
+    "distance_miles": 2111.16,
+    "total_miles": 2111.16,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "outrageous",
+    "business_name": "outrageous",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": "Current Location",
+    "end_location": "outrageous",
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.67,
+    "deductible_amount": 1414.48,
+    "annual_miles_total": 2120.27,
+    "method": "standard_mileage",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-27T19:37:47.144872"
+      }
+    ]
+  },
+  {
+    "trip_id": "deec7a14-6f30-47d4-bfc2-649355473fd3",
+    "date": "2026-08-29",
+    "start_time": "2026-08-29T13:11:18.979919+00:00",
+    "end_time": "2026-08-29T13:26:48.693187+00:00",
+    "duration_minutes": 15.5,
+    "distance_miles": 7.75,
+    "total_miles": 7.75,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "Walmart",
+    "business_name": "Walmart",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": {
+      "latitude": 37.379975,
+      "longitude": -122.220365,
+      "accuracy": 5.0
+    },
+    "end_location": "Walmart",
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.67,
+    "deductible_amount": 5.19,
+    "annual_miles_total": 2128.02,
+    "method": "standard_mileage",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-29T13:26:48.741912"
+      }
+    ]
+  },
+  {
+    "trip_id": "27888c56-d74c-4b17-a533-acadb9b705e6",
+    "date": "2026-08-29",
+    "start_time": "2026-08-29T21:20:23.317568+00:00",
+    "end_time": "2026-08-29T21:28:39.594065+00:00",
+    "duration_minutes": 8.3,
+    "distance_miles": 4.14,
+    "total_miles": 4.14,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "Walmart",
+    "business_name": "Walmart",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": "Current Location",
+    "end_location": "Walmart",
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.67,
+    "deductible_amount": 2.77,
+    "annual_miles_total": 2132.16,
+    "method": "standard_mileage",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-29T21:28:39.660686"
+      }
+    ]
+  },
+  {
+    "trip_id": "49a5abf9-b5f2-4169-8c0f-9194b59e1249",
+    "date": "2026-08-29",
+    "start_time": "2026-08-29T21:29:38.178060+00:00",
+    "end_time": "2026-08-29T21:32:08.889287+00:00",
+    "duration_minutes": 2.5,
+    "distance_miles": 1.26,
+    "total_miles": 1.26,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "outragers",
+    "business_name": "outragers",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": "Current Location",
+    "end_location": "outragers",
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.67,
+    "deductible_amount": 0.84,
+    "annual_miles_total": 2133.42,
+    "method": "standard_mileage",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-29T21:32:08.918144"
+      }
+    ]
+  },
+  {
+    "trip_id": "6bc0b250-2142-4c0a-be82-314a69150838",
+    "user_id": "9513cced-bd77-4451-a294-ceef3b9ac360",
+    "date": "2026-08-29",
+    "start_time": "2026-08-29T21:49:57.527364+00:00",
+    "end_time": "2026-08-29T21:56:36.603791+00:00",
+    "duration_minutes": 6.7,
+    "distance_miles": 0.4,
+    "total_miles": 0.4,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "Walmart",
+    "business_name": "Walmart",
+    "client_name": "John",
+    "meeting_with": "John",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": {
+      "latitude": 37.379975,
+      "longitude": -122.220365,
+      "accuracy": 5.0
+    },
+    "end_location": {
+      "latitude": 37.379975,
+      "longitude": -122.2129983,
+      "accuracy": 5.0
+    },
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.76,
+    "deductible_amount": 0.3,
+    "annual_miles_total": 2133.82,
+    "method": "gps_tracking",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "gps_points": [
+      {
+        "latitude": 37.379975,
+        "longitude": -122.220365,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T21:49:57.527364+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2180824,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T21:53:00.624684+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2155866,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T21:53:18.844014+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2130853,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T21:53:43.978701+00:00"
+      }
+    ],
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-29T21:56:36.603791+00:00"
+      }
+    ]
+  },
+  {
+    "trip_id": "f93a5af6-390a-4c02-9081-0184c4312cfa",
+    "user_id": "9513cced-bd77-4451-a294-ceef3b9ac360",
+    "date": "2026-08-29",
+    "start_time": "2026-08-29T22:03:14.499145+00:00",
+    "end_time": "2026-08-29T22:13:04.081813+00:00",
+    "duration_minutes": 9.8,
+    "distance_miles": 0.54,
+    "total_miles": 0.54,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "target",
+    "business_name": "target",
+    "client_name": "Sara",
+    "meeting_with": "Sara",
+    "purpose": "business meeting",
+    "notes": null,
+    "start_location": {
+      "latitude": 37.379975,
+      "longitude": -122.2129983,
+      "accuracy": 5.0
+    },
+    "end_location": {
+      "latitude": 37.379975,
+      "longitude": -122.2129983,
+      "accuracy": 5.0
+    },
+    "business_purpose": "business meeting",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.76,
+    "deductible_amount": 0.41,
+    "annual_miles_total": 2134.36,
+    "method": "gps_tracking",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "gps_points": [
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2129983,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T22:03:14.499145+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.218,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T22:09:52.792446+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2156028,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T22:10:11.849591+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2131011,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-29T22:10:21.667594+00:00"
+      }
+    ],
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-29T22:13:04.081813+00:00"
+      }
+    ]
+  },
+  {
+    "trip_id": "dd886c1b-8e61-4797-9d9b-71f0dace0bdf",
+    "user_id": "9513cced-bd77-4451-a294-ceef3b9ac360",
+    "date": "2026-08-30",
+    "start_time": "2026-08-30T10:28:07.210403+00:00",
+    "end_time": "2026-08-30T10:31:47.350507+00:00",
+    "duration_minutes": 3.7,
+    "distance_miles": 0.68,
+    "total_miles": 0.68,
+    "trip_type": "business",
+    "status": "Completed",
+    "destination": "Walmart",
+    "business_name": "Walmart",
+    "client_name": "Sara",
+    "meeting_with": "Sara",
+    "purpose": "restaurant plumbing",
+    "notes": null,
+    "start_location": {
+      "latitude": 37.379975,
+      "longitude": -122.2129983,
+      "accuracy": 5.0
+    },
+    "end_location": {
+      "latitude": 37.379975,
+      "longitude": -122.2155,
+      "accuracy": 5.0
+    },
+    "business_purpose": "restaurant plumbing",
+    "odometer_start": null,
+    "odometer_end": null,
+    "irs_rate": 0.76,
+    "deductible_amount": 0.52,
+    "annual_miles_total": 2135.04,
+    "method": "gps_tracking",
+    "created_by": "Max AI",
+    "return_trip_required": true,
+    "return_trip_logged": false,
+    "reminder_dismissed": false,
+    "parent_trip_id": null,
+    "gps_points": [
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2129983,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-30T10:28:07.210403+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.218,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-30T10:29:09.524985+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.2129983,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-30T10:29:36.514159+00:00"
+      },
+      {
+        "latitude": 37.379975,
+        "longitude": -122.215397,
+        "accuracy": 5.0,
+        "timestamp": "2026-08-30T10:29:57.117222+00:00"
+      }
+    ],
+    "audit_log": [
+      {
+        "action": "trip_completed",
+        "by": "Max AI",
+        "date": "2026-08-30T10:31:47.350507+00:00"
+      }
+    ]
+  }
+]
