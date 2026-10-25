@@ -112,48 +112,34 @@ def validate_coordinates(
         raise ValueError("Invalid longitude")
 
 
-def calculate_annual_miles(history) -> float:
+def calculate_annual_miles(
+    history,
+    user_id: Optional[str] = None,
+) -> float:
     """
     Calculate total mileage for the current UTC calendar year.
+
+    When user_id is supplied, include only records explicitly
+    owned by that user.
     """
 
     total = 0.0
-
-    current_year = datetime.now(
-        timezone.utc
-    ).year
+    current_year = datetime.now(timezone.utc).year
+    user_id = str(user_id) if user_id is not None else None
 
     for trip in history:
+        if user_id is not None and str(trip.get("user_id", "")) != user_id:
+            continue
 
-        trip_date = str(
-            trip.get("date", "")
-        )
+        trip_date = str(trip.get("date", ""))
 
-        if trip_date.startswith(
-            str(current_year)
-        ):
-
+        if trip_date.startswith(str(current_year)):
             try:
-
-                total += float(
-                    trip.get(
-                        "total_miles",
-                        0,
-                    )
-                    or 0
-                )
-
-            except (
-                TypeError,
-                ValueError,
-            ):
-
+                total += float(trip.get("total_miles", 0) or 0)
+            except (TypeError, ValueError):
                 continue
 
-    return round(
-        total,
-        2,
-    )
+    return round(total, 2)
 
 
 # =========================================================
@@ -1046,7 +1032,8 @@ def stop_mileage_tracking(
     annual_miles_total = (
 
         calculate_annual_miles(
-            history
+            history,
+            user_id=user_id,
         )
         +
         distance_miles
@@ -1666,7 +1653,8 @@ async def create_manual_trip(
     annual_total = (
 
         calculate_annual_miles(
-            history
+            history,
+            user_id=str(current_user.id),
         )
         +
         miles
@@ -1826,14 +1814,16 @@ async def get_trip_history(
 
     history = get_mileage()
 
-    if not isinstance(
-        history,
-        list,
-    ):
-
+    if not isinstance(history, list):
         return []
 
-    return history
+    current_user_id = str(current_user.id)
+
+    return [
+        trip
+        for trip in history
+        if str(trip.get("user_id", "")) == current_user_id
+    ]
 
 
 # =========================================================
@@ -1857,98 +1847,51 @@ async def get_mileage_reminders(
 
         history = []
 
+    current_user_id = str(current_user.id)
     reminders = []
+    seen_trip_ids = set()
 
     for trip in history:
+        # Never expose reminders for records not explicitly owned
+        # by the authenticated user.
+        if str(trip.get("user_id", "")) != current_user_id:
+            continue
+
+        trip_id = trip.get("trip_id")
+
+        if not trip_id or trip_id in seen_trip_ids:
+            continue
 
         if (
-
-            trip.get(
-                "return_trip_required"
-            )
-            is True
-
-            and
-
-            trip.get(
-                "return_trip_logged"
-            )
-            is not True
-
-            and
-
-            trip.get(
-                "reminder_dismissed"
-            )
-            is not True
-
-            and
-
-            not trip.get(
-                "parent_trip_id"
-            )
-
+            trip.get("return_trip_required") is True
+            and trip.get("return_trip_logged") is not True
+            and trip.get("reminder_dismissed") is not True
+            and not trip.get("parent_trip_id")
         ):
-
+            seen_trip_ids.add(trip_id)
             reminders.append({
-
-                "trip_id":
-                    trip.get(
-                        "trip_id"
-                    ),
-
-                "date":
-                    trip.get(
-                        "date"
-                    ),
-
-                "start_location":
-                    trip.get(
-                        "start_location"
-                    ),
-
-                "destination":
-                    trip.get(
-                        "destination"
-                    )
-                    or
-                    trip.get(
-                        "end_location"
-                    ),
-
-                "purpose":
-                    trip.get(
-                        "business_purpose"
-                    )
-                    or
-                    trip.get(
-                        "purpose"
-                    ),
-
-                "miles":
-                    trip.get(
-                        "total_miles"
-                    )
-                    or
-                    trip.get(
-                        "distance_miles"
-                    )
-                    or
-                    0,
+                "trip_id": trip_id,
+                "date": trip.get("date"),
+                "start_location": trip.get("start_location"),
+                "destination": (
+                    trip.get("destination")
+                    or trip.get("end_location")
+                ),
+                "purpose": (
+                    trip.get("business_purpose")
+                    or trip.get("purpose")
+                ),
+                "miles": (
+                    trip.get("total_miles")
+                    or trip.get("distance_miles")
+                    or 0
+                ),
             })
 
     return {
-
-        "success":
-            True,
-
-        "count":
-            len(
-                reminders
-            ),
-
-        "reminders":
-            reminders,
+        "success": True,
+        "count": len(reminders),
+        "reminders": reminders,
     }
 
 
@@ -2002,12 +1945,7 @@ async def log_return_trip(
 
                 and
 
-                str(
-                    trip.get(
-                        "user_id",
-                        current_user_id,
-                    )
-                )
+                str(trip.get("user_id", ""))
                 ==
                 current_user_id
             )
@@ -2208,7 +2146,8 @@ async def log_return_trip(
             round(
 
                 calculate_annual_miles(
-                    history
+                    history,
+                    user_id=current_user_id,
                 )
                 +
                 miles,
@@ -2349,12 +2288,7 @@ async def dismiss_mileage_reminder(
 
             and
 
-            str(
-                trip.get(
-                    "user_id",
-                    current_user_id,
-                )
-            )
+            str(trip.get("user_id", ""))
             ==
             current_user_id
 
@@ -2446,12 +2380,7 @@ async def edit_mileage(
 
             and
 
-            str(
-                trip.get(
-                    "user_id",
-                    current_user_id,
-                )
-            )
+            str(trip.get("user_id", ""))
             ==
             current_user_id
 
@@ -2610,12 +2539,7 @@ async def delete_mileage_trip(
 
             and
 
-            str(
-                trip.get(
-                    "user_id",
-                    current_user_id,
-                )
-            )
+            str(trip.get("user_id", ""))
             ==
             current_user_id
 
@@ -2653,12 +2577,7 @@ async def delete_mileage_trip(
 
             and
 
-            str(
-                trip.get(
-                    "user_id",
-                    current_user_id,
-                )
-            )
+            str(trip.get("user_id", ""))
             ==
             current_user_id
         )
